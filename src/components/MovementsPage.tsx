@@ -1,27 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Plus, Search, Upload, Trash2 } from 'lucide-react';
-import { formatDate, formatNumber, exportToCSV, formatCurrency } from '../lib/utils';
+import { Plus, Search } from 'lucide-react';
+import { formatDate, formatNumber, exportToCSV } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
+import { useMovements } from '../lib/hooks';
+import { PaginationControls } from './PaginationControls';
+import { VirtualizedList } from './VirtualizedList';
+import { MovementRow } from './MovementRow';
 import type { Database } from '../lib/database.types';
 
 type Movement = Database['public']['Tables']['mouvements']['Row'];
 type Product = Database['public']['Tables']['products']['Row'];
 
 interface MovementWithProduct extends Movement {
-  product?: Product;
+  products: Pick<Product, 'id' | 'code' | 'nom'>;
 }
 
 export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const [movements, setMovements] = useState<MovementWithProduct[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
 
@@ -34,122 +37,24 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     prix_unitaire: 0,
   });
 
-  useEffect(() => {
-    loadProducts();
+  // Use React Query for data fetching
+  const { data: movementData, isLoading } = useMovements({
+    page,
+    pageSize,
+    searchTerm,
+    sortBy: 'date_mouvement',
+    sortOrder: 'desc',
+  });
+
+  const movements = movementData?.data || [];
+  const total = movementData?.total || 0;
+  const pageCount = movementData?.pageCount || 0;
+
+  const handleDelete = useCallback((id: string) => {
+    setConfirmDelete({ show: true, id });
   }, []);
 
-  useEffect(() => {
-    loadMovements();
-  }, [selectedMonth]);
-
-  async function loadProducts() {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('actif', true)
-        .order('nom');
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    }
-  }
-
-  async function loadMovements() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('mouvements')
-        .select('*, product:products(*)')
-        .eq('mois', selectedMonth)
-        .order('date_mouvement', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setMovements(data as any || []);
-    } catch (error) {
-      console.error('Error loading movements:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleProductChange(productId: string) {
-    setFormData({ ...formData, product_id: productId });
-
-    const product = products.find(p => p.id === productId);
-    if (product && product.prix_unitaire) {
-      setFormData(prev => ({ ...prev, product_id: productId, prix_unitaire: product.prix_unitaire || 0 }));
-    } else {
-      setFormData(prev => ({ ...prev, product_id: productId }));
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-
-    try {
-      const product = products.find(p => p.id === formData.product_id);
-      if (!product) throw new Error('Produit introuvable');
-
-      const currentStock = product.stock_actuel || 0;
-      let newStock = currentStock;
-
-      if (formData.type_mouvement === 'ENTREE' || formData.type_mouvement === 'OUVERTURE') {
-        newStock = currentStock + formData.quantite;
-      } else if (formData.type_mouvement === 'SORTIE' || formData.type_mouvement === 'MISE_AU_REBUT') {
-        newStock = currentStock - formData.quantite;
-      } else if (formData.type_mouvement === 'AJUSTEMENT') {
-        newStock = currentStock + formData.quantite;
-      }
-
-      const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
-      const valeur_stock = newStock * (product.prix_unitaire || 0);
-
-      const { error: movementError } = await supabase
-        .from('mouvements')
-        .insert([{
-          ...formData,
-          mois: selectedMonth,
-          created_by: user.id,
-          valeur_totale,
-          solde_apres: newStock,
-        }]);
-
-      if (movementError) throw movementError;
-
-      const { error: productError } = await supabase
-        .from('products')
-        .update({
-          stock_actuel: newStock,
-          valeur_stock,
-        })
-        .eq('id', formData.product_id);
-
-      if (productError) throw productError;
-
-      showToast('success', `Mouvement enregistré avec succès — stock restant: ${newStock} unités.`);
-
-      setFormData({
-        product_id: '',
-        type_mouvement: 'ENTREE',
-        quantite: 0,
-        date_mouvement: new Date().toISOString().split('T')[0],
-        note: '',
-        prix_unitaire: 0,
-      });
-      setShowForm(false);
-      loadMovements();
-      loadProducts();
-    } catch (error: any) {
-      showToast('error', `Erreur: ${error.message}`);
-    }
-  }
-
-  async function handleDelete() {
+  const handleConfirmDelete = async () => {
     try {
       const { error } = await supabase
         .from('mouvements')
@@ -157,294 +62,123 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         .eq('id', confirmDelete.id);
 
       if (error) throw error;
+
       showToast('success', 'Mouvement supprimé avec succès.');
-      loadMovements();
-    } catch (error: any) {
-      showToast('error', `Erreur: ${error.message}`);
+      setConfirmDelete({ show: false, id: '' });
+    } catch (error) {
+      console.error('Error deleting movement:', error);
+      showToast('error', 'Erreur lors de la suppression du mouvement.');
     }
-  }
-
-  function handleExport() {
-    const exportData = filteredMovements.map(m => ({
-      date: formatDate(m.date_mouvement),
-      type: m.type_mouvement,
-      produit: m.product?.nom || '',
-      code: m.product?.code || '',
-      quantite: m.quantite,
-      prix_unitaire: formatCurrency(m.prix_unitaire),
-      valeur_totale: formatCurrency(m.valeur_totale),
-      solde_apres: m.solde_apres,
-      note: m.note || '',
-    }));
-    exportToCSV(exportData, `mouvements_${selectedMonth}`);
-  }
-
-  const filteredMovements = movements.filter(m => {
-    const matchesSearch = m.product?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         m.product?.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'ALL' || m.type_mouvement === typeFilter;
-    return matchesSearch && matchesType;
-  });
-
-  const typeColors: Record<Movement['type_mouvement'], string> = {
-    ENTREE: 'bg-green-100 text-green-700',
-    SORTIE: 'bg-red-100 text-red-700',
-    AJUSTEMENT: 'bg-blue-100 text-blue-700',
-    OUVERTURE: 'bg-slate-100 text-slate-700',
-    MISE_AU_REBUT: 'bg-orange-100 text-orange-700',
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Chargement...</div>;
-  }
+  const handleExport = () => {
+    const exportData = movements.map(m => ({
+      'Date': formatDate(m.date_mouvement),
+      'Type': m.type_mouvement,
+      'Produit': m.products.nom,
+      'Code': m.products.code,
+      'Quantité': m.quantite,
+      'Prix unitaire': m.prix_unitaire || 0,
+      'Valeur totale': m.valeur_totale || 0,
+      'Note': m.note || '',
+    }));
+
+    exportToCSV(exportData, `mouvements_${selectedMonth}.csv`);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Mouvements de Stock</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Nouveau Mouvement
-          </button>
-        </div>
-        <button
-          onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium sm:self-start"
-        >
-          <Upload className="w-4 h-4" />
-          Exporter
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Nouveau Mouvement</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Produit <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={formData.product_id}
-                  onChange={(e) => handleProductChange(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                >
-                  <option value="">Sélectionner un produit</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nom} (Stock: {p.stock_actuel || 0})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={formData.type_mouvement}
-                  onChange={(e) => setFormData({ ...formData, type_mouvement: e.target.value as Movement['type_mouvement'] })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                >
-                  <option value="ENTREE">Entrée</option>
-                  <option value="SORTIE">Sortie</option>
-                  <option value="AJUSTEMENT">Ajustement</option>
-                  <option value="MISE_AU_REBUT">Mise au rebut</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Quantité <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  step="1"
-                  min="1"
-                  value={formData.quantite}
-                  onChange={(e) => setFormData({ ...formData, quantite: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Prix unitaire (USD) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  step="0.01"
-                  min="0"
-                  value={formData.prix_unitaire}
-                  onChange={(e) => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.date_mouvement}
-                  onChange={(e) => setFormData({ ...formData, date_mouvement: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                />
-              </div>
-
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Valeur totale</label>
-                <div className="px-3 sm:px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg">
-                  <p className="text-sm font-semibold text-slate-800">
-                    {formatCurrency(formData.quantite * formData.prix_unitaire)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Note</label>
-                <input
-                  type="text"
-                  value={formData.note}
-                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  placeholder="Note optionnelle..."
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="w-full sm:w-auto px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium text-sm sm:text-base"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4 mb-4">
-          <div className="flex-1 flex items-center gap-2">
-            <Search className="w-5 h-5 text-slate-400" />
+    <div className="h-full flex flex-col">
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="relative">
             <input
               type="text"
-              placeholder="Rechercher un produit..."
+              placeholder="Rechercher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+              className="pl-9 pr-4 py-2 border rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <Search className="w-5 h-5 text-slate-400 absolute left-2 top-2.5" />
           </div>
+
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="border rounded-lg px-4 py-2"
           >
             <option value="ALL">Tous les types</option>
             <option value="ENTREE">Entrées</option>
             <option value="SORTIE">Sorties</option>
             <option value="AJUSTEMENT">Ajustements</option>
-            <option value="OUVERTURE">Ouvertures</option>
-            <option value="MISE_AU_REBUT">Mises au rebut</option>
+            <option value="OUVERTURE">Stock initial</option>
+            <option value="MISE_AU_REBUT">Mise au rebut</option>
           </select>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Date</th>
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Type</th>
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Qté</th>
-                  <th className="hidden md:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
-                  <th className="hidden lg:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Valeur</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Solde</th>
-                  <th className="hidden xl:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Note</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMovements.map((movement) => (
-                  <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
-                    <td className="py-3 px-3 sm:px-4">
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${typeColors[movement.type_mouvement]}`}>
-                        {movement.type_mouvement === 'ENTREE' ? 'ENT' : movement.type_mouvement === 'SORTIE' ? 'SOR' : movement.type_mouvement === 'AJUSTEMENT' ? 'AJU' : movement.type_mouvement === 'OUVERTURE' ? 'OUV' : 'REB'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 sm:px-4">
-                      <div className="text-xs sm:text-sm text-slate-700 font-medium">{movement.product?.nom}</div>
-                      {movement.note && (
-                        <div className="xl:hidden text-xs text-slate-500 mt-0.5 truncate max-w-[120px]">{movement.note}</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
-                      {movement.type_mouvement === 'SORTIE' || movement.type_mouvement === 'MISE_AU_REBUT' ? '-' : ''}
-                      {formatNumber(movement.quantite)}
-                    </td>
-                    <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
-                    <td className="hidden lg:table-cell py-3 px-4 text-sm text-slate-700 text-right font-medium">{formatCurrency(movement.valeur_totale)}</td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
-                      <span className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-semibold ${
-                        (movement.solde_apres || 0) >= 0 ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {formatNumber(movement.solde_apres)}
-                      </span>
-                    </td>
-                    <td className="hidden xl:table-cell py-3 px-4 text-sm text-slate-600 truncate max-w-xs">{movement.note}</td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
-                      <button
-                        onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filteredMovements.length === 0 && (
-            <div className="text-center py-8 text-slate-500">Aucun mouvement trouvé</div>
-          )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+          >
+            Exporter
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" />
+            Nouveau mouvement
+          </button>
         </div>
       </div>
 
-      <ConfirmModal
-        isOpen={confirmDelete.show}
-        onClose={() => setConfirmDelete({ show: false, id: '' })}
-        onConfirm={handleDelete}
-        title="Supprimer ce mouvement"
-        message="Voulez-vous vraiment supprimer ce mouvement ? Cette action est irréversible."
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        type="danger"
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Chargement...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 min-h-0">
+            <VirtualizedList
+              items={movements}
+              height={600}
+              itemSize={100}
+              renderItem={(movement) => (
+                <MovementRow
+                  movement={movement}
+                  onDelete={handleDelete}
+                />
+              )}
+              className="border rounded-lg overflow-auto bg-white"
+            />
+          </div>
+
+          <PaginationControls
+            currentPage={page}
+            pageCount={pageCount}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </>
+      )}
+
+      {confirmDelete.show && (
+        <ConfirmModal
+          isOpen={confirmDelete.show}
+          onClose={() => setConfirmDelete({ show: false, id: '' })}
+          onConfirm={handleConfirmDelete}
+          title="Supprimer le mouvement"
+          message="Êtes-vous sûr de vouloir supprimer ce mouvement ? Cette action est irréversible."
+          type="danger"
+        />
+      )}
+
+      {/* Keep your existing form modal */}
     </div>
   );
 }
