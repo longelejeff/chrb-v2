@@ -209,12 +209,12 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
-            <p className="text-sm text-slate-600 mt-1">
+            <h2 className="text-xl font-bold text-slate-800">Inventaire Mensuel</h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
               Statut: {isValidated ? (
                 <span className="text-green-600 font-medium">Validé</span>
               ) : (
@@ -229,7 +229,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             <button
               onClick={() => setShowValidateModal(true)}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm"
             >
               <Lock className="w-4 h-4" />
               Valider l'inventaire
@@ -238,44 +238,44 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
         <button
           onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium sm:self-start"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium sm:self-start"
         >
           <Upload className="w-4 h-4" />
           Exporter
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+        <div className="flex items-center gap-2 mb-3">
           <Search className="w-5 h-5 text-slate-400" />
           <input
             type="text"
             placeholder="Rechercher un produit..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Théorique</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Physique</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Écart</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Produit</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Théo.</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Phys.</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Écart</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredLines.map((line) => (
                   <tr key={line.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 font-medium">{line.product?.nom}</td>
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right">{formatNumber(line.stock_theorique)}</td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
+                    <td className="py-2 px-2 sm:px-3 text-xs text-slate-700 font-medium truncate max-w-[120px] sm:max-w-none">{line.product?.nom}</td>
+                    <td className="py-2 px-2 sm:px-3 text-xs text-slate-700 text-right">{formatNumber(line.stock_theorique)}</td>
+                    <td className="py-2 px-2 sm:px-3 text-right">
                       {isValidated ? (
-                        <span className="text-xs sm:text-sm text-slate-700">{formatNumber(line.stock_physique)}</span>
+                        <span className="text-xs text-slate-700">{formatNumber(line.stock_physique)}</span>
                       ) : (
                         <input
                           type="number"
@@ -283,13 +283,13 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                           min="0"
                           value={line.stock_physique || 0}
                           onChange={(e) => updateLine(line.id, parseInt(e.target.value) || 0)}
-                          className="w-16 sm:w-24 px-2 py-1 text-xs sm:text-sm text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-14 sm:w-20 px-1.5 py-1 text-xs text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       )}
                     </td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
+                    <td className="py-2 px-2 sm:px-3 text-right">
                       <span
-                        className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-medium ${
+                        className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
                           (line.ecart || 0) === 0
                             ? 'bg-slate-100 text-slate-700'
                             : (line.ecart || 0) > 0
@@ -312,8 +312,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
       </div>
 
       {!isValidated && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs sm:text-sm text-blue-800">
             <strong>Note:</strong> Remplissez les stocks physiques pour chaque produit, puis validez l'inventaire.
             Une fois validé, l'inventaire ne pourra plus être modifié.
           </p>

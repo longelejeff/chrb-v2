@@ -391,25 +391,25 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Produits</h2>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-xl font-bold text-slate-800">Produits</h2>
           <button
             onClick={() => openModal()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
           >
             <Plus className="w-4 h-4" />
             Nouveau
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           <button
             onClick={() => setShowQuickImport(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-1 px-2 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs font-medium"
           >
-            <FileText className="w-4 h-4" />
-            Import Rapide
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Import</span> Rapide
           </button>
           <label className="cursor-pointer">
             <input
@@ -418,88 +418,88 @@ export function ProductsPage() {
               onChange={handleImportCSV}
               className="hidden"
             />
-            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-              <Upload className="w-4 h-4" />
-              Importer CSV
+            <div className="flex items-center justify-center gap-1 px-2 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium">
+              <Upload className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Import</span> CSV
             </div>
           </label>
           <button
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs font-medium"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
             Exporter
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+        <div className="flex items-center gap-2 mb-3">
           <Search className="w-5 h-5 text-slate-400" />
           <input
             type="text"
             placeholder="Rechercher par code, nom ou classe thérapeutique..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Nom</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Stock</th>
-                  <th className="hidden sm:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Valeur</th>
-                  <th className="hidden md:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Statut</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Nom</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Stock</th>
+                  <th className="hidden sm:table-cell text-right py-2 px-3 text-xs font-semibold text-slate-700">Prix U.</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Valeur</th>
+                  <th className="hidden md:table-cell text-left py-2 px-3 text-xs font-semibold text-slate-700">Statut</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.map((product) => (
                   <tr key={product.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-3 sm:px-4">
-                      <div className="text-sm text-slate-700 font-medium">{product.nom}</div>
+                    <td className="py-2 px-2 sm:px-3">
+                      <div className="text-xs sm:text-sm text-slate-700 font-medium truncate max-w-[120px] sm:max-w-none">{product.nom}</div>
                       <div className="md:hidden text-xs text-slate-500 mt-0.5">
                         {product.actif ? (
-                          <span className="text-green-600">● Actif</span>
+                          <span className="text-green-600">●</span>
                         ) : (
-                          <span className="text-slate-400">● Inactif</span>
+                          <span className="text-slate-400">●</span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{product.stock_actuel || 0}</td>
-                    <td className="hidden sm:table-cell py-3 px-4 text-sm text-slate-700 text-right">{formatCurrency(product.prix_unitaire)}</td>
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{formatCurrency(product.valeur_stock)}</td>
-                    <td className="hidden md:table-cell py-3 px-4">
+                    <td className="py-2 px-2 sm:px-3 text-xs text-slate-700 text-right font-medium">{product.stock_actuel || 0}</td>
+                    <td className="hidden sm:table-cell py-2 px-3 text-xs text-slate-700 text-right">{formatCurrency(product.prix_unitaire)}</td>
+                    <td className="py-2 px-2 sm:px-3 text-xs text-slate-700 text-right font-medium">{formatCurrency(product.valeur_stock)}</td>
+                    <td className="hidden md:table-cell py-2 px-3">
                       {product.actif ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
                           <Power className="w-3 h-3" /> Actif
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs font-medium">
                           <PowerOff className="w-3 h-3" /> Inactif
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
-                      <div className="flex justify-end gap-1 sm:gap-2">
+                    <td className="py-2 px-2 sm:px-3 text-right">
+                      <div className="flex justify-end gap-1">
                         <button
                           onClick={() => toggleActive(product)}
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                          className="p-1 hover:bg-slate-100 rounded transition-colors"
                           title={product.actif ? 'Désactiver' : 'Activer'}
                         >
-                          {product.actif ? <PowerOff className="w-4 h-4 text-slate-600" /> : <Power className="w-4 h-4 text-slate-600" />}
+                          {product.actif ? <PowerOff className="w-3.5 h-3.5 text-slate-600" /> : <Power className="w-3.5 h-3.5 text-slate-600" />}
                         </button>
                         <button
                           onClick={() => openModal(product)}
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                          className="p-1 hover:bg-slate-100 rounded transition-colors"
                           title="Modifier"
                         >
-                          <Edit2 className="w-4 h-4 text-blue-600" />
+                          <Edit2 className="w-3.5 h-3.5 text-blue-600" />
                         </button>
                       </div>
                     </td>
