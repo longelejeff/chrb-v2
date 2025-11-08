@@ -32,6 +32,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     date_mouvement: new Date().toISOString().split('T')[0],
     note: '',
     prix_unitaire: 0,
+    lot_numero: '',
+    date_peremption: '',
   });
 
   useEffect(() => {
@@ -109,6 +111,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
       const valeur_stock = newStock * (product.prix_unitaire || 0);
 
+      // @ts-ignore - New fields added to database
       const { error: movementError } = await supabase
         .from('mouvements')
         .insert([{
@@ -121,6 +124,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
       if (movementError) throw movementError;
 
+      // @ts-ignore - Supabase type inference issue
       const { error: productError } = await supabase
         .from('products')
         .update({
@@ -140,6 +144,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         date_mouvement: new Date().toISOString().split('T')[0],
         note: '',
         prix_unitaire: 0,
+        lot_numero: '',
+        date_peremption: '',
       });
       setShowForm(false);
       loadMovements();
@@ -171,6 +177,10 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       produit: m.product?.nom || '',
       code: m.product?.code || '',
       quantite: m.quantite,
+      // @ts-ignore
+      lot_numero: m.lot_numero || '',
+      // @ts-ignore
+      date_peremption: m.date_peremption ? formatDate(m.date_peremption) : '',
       prix_unitaire: formatCurrency(m.prix_unitaire),
       valeur_totale: formatCurrency(m.valeur_totale),
       solde_apres: m.solde_apres,
@@ -304,6 +314,37 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 />
               </div>
 
+              {formData.type_mouvement === 'ENTREE' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Numéro de lot <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.lot_numero}
+                      onChange={(e) => setFormData({ ...formData, lot_numero: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      placeholder="Ex: LOT-2025-001"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Date de péremption <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.date_peremption}
+                      onChange={(e) => setFormData({ ...formData, date_peremption: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Valeur totale</label>
                 <div className="px-3 sm:px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg">
@@ -379,6 +420,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Type</th>
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Qté</th>
+                  <th className="hidden md:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Numéro de lot</th>
+                  <th className="hidden lg:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Date de péremption</th>
                   <th className="hidden md:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
                   <th className="hidden lg:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Valeur</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Solde</th>
@@ -387,45 +430,79 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredMovements.map((movement) => (
-                  <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
-                    <td className="py-3 px-3 sm:px-4">
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${typeColors[movement.type_mouvement]}`}>
-                        {movement.type_mouvement === 'ENTREE' ? 'ENT' : movement.type_mouvement === 'SORTIE' ? 'SOR' : movement.type_mouvement === 'AJUSTEMENT' ? 'AJU' : movement.type_mouvement === 'OUVERTURE' ? 'OUV' : 'REB'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 sm:px-4">
-                      <div className="text-xs sm:text-sm text-slate-700 font-medium">{movement.product?.nom}</div>
-                      {movement.note && (
-                        <div className="xl:hidden text-xs text-slate-500 mt-0.5 truncate max-w-[120px]">{movement.note}</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
-                      {movement.type_mouvement === 'SORTIE' || movement.type_mouvement === 'MISE_AU_REBUT' ? '-' : ''}
-                      {formatNumber(movement.quantite)}
-                    </td>
-                    <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
-                    <td className="hidden lg:table-cell py-3 px-4 text-sm text-slate-700 text-right font-medium">{formatCurrency(movement.valeur_totale)}</td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
-                      <span className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-semibold ${
-                        (movement.solde_apres || 0) >= 0 ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {formatNumber(movement.solde_apres)}
-                      </span>
-                    </td>
-                    <td className="hidden xl:table-cell py-3 px-4 text-sm text-slate-600 truncate max-w-xs">{movement.note}</td>
-                    <td className="py-3 px-3 sm:px-4 text-right">
-                      <button
-                        onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredMovements.map((movement) => {
+                  // Calculate expiry status
+                  let expiryClass = '';
+                  let expiryText = '';
+                  // @ts-ignore - New fields added to database
+                  if (movement.date_peremption) {
+                    const today = new Date();
+                    // @ts-ignore
+                    const expiryDate = new Date(movement.date_peremption);
+                    const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysUntilExpiry < 0) {
+                      expiryClass = 'text-red-700 font-semibold';
+                      // @ts-ignore
+                      expiryText = formatDate(movement.date_peremption);
+                    } else if (daysUntilExpiry <= 30) {
+                      expiryClass = 'text-orange-600 font-semibold';
+                      // @ts-ignore
+                      expiryText = formatDate(movement.date_peremption);
+                    } else {
+                      expiryClass = 'text-slate-700';
+                      // @ts-ignore
+                      expiryText = formatDate(movement.date_peremption);
+                    }
+                  }
+
+                  return (
+                    <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
+                      <td className="py-3 px-3 sm:px-4">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${typeColors[movement.type_mouvement]}`}>
+                          {movement.type_mouvement === 'ENTREE' ? 'ENT' : movement.type_mouvement === 'SORTIE' ? 'SOR' : movement.type_mouvement === 'AJUSTEMENT' ? 'AJU' : movement.type_mouvement === 'OUVERTURE' ? 'OUV' : 'REB'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 sm:px-4">
+                        <div className="text-xs sm:text-sm text-slate-700 font-medium">{movement.product?.nom}</div>
+                        {movement.note && (
+                          <div className="xl:hidden text-xs text-slate-500 mt-0.5 truncate max-w-[120px]">{movement.note}</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
+                        {movement.type_mouvement === 'SORTIE' || movement.type_mouvement === 'MISE_AU_REBUT' ? '-' : ''}
+                        {formatNumber(movement.quantite)}
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-700">
+                        {/* @ts-ignore */}
+                        {movement.lot_numero || '-'}
+                      </td>
+                      <td className={`hidden lg:table-cell py-3 px-4 text-sm ${expiryClass}`}>
+                        {expiryText || '-'}
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
+                      <td className="hidden lg:table-cell py-3 px-4 text-sm text-slate-700 text-right font-medium">{formatCurrency(movement.valeur_totale)}</td>
+                      <td className="py-3 px-3 sm:px-4 text-right">
+                        <span className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-semibold ${
+                          (movement.solde_apres || 0) >= 0 ? 'text-green-700' : 'text-red-700'
+                        }`}>
+                          {formatNumber(movement.solde_apres)}
+                        </span>
+                      </td>
+                      <td className="hidden xl:table-cell py-3 px-4 text-sm text-slate-600 truncate max-w-xs">{movement.note}</td>
+                      <td className="py-3 px-3 sm:px-4 text-right">
+                        <button
+                          onClick={() => setConfirmDelete({ show: true, id: movement.id })}
+                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
