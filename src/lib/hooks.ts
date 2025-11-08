@@ -87,6 +87,38 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
   });
 }
 
+// All Movements hook (for printing)
+export function useAllMovements({ searchTerm = '', month, typeFilter, enabled }: { searchTerm?: string; month: string; typeFilter?: string; enabled: boolean }) {
+  return useQuery({
+    queryKey: ['all-movements', searchTerm, month, typeFilter],
+    enabled,
+    queryFn: async (): Promise<any[]> => {
+      let query = supabase
+        .from('mouvements')
+        .select('*, product:products(*)')
+        .eq('mois', month)
+        .order('date_mouvement', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (searchTerm) {
+        query = query.or(
+          `product.nom.ilike.%${searchTerm}%,product.code.ilike.%${searchTerm}%`
+        );
+      }
+
+      if (typeFilter && typeFilter !== 'ALL') {
+        query = query.eq('type_mouvement', typeFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return data || [];
+    },
+  });
+}
+
 // Expiries hook
 export function useExpiries({ page, pageSize, searchTerm = '' }: PaginationParams) {
   return useQuery({

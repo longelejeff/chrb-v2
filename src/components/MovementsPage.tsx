@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Plus, Search, Upload, Trash2 } from 'lucide-react';
+import { Plus, Search, Upload, Trash2, Printer } from 'lucide-react';
 import { formatDate, formatNumber, exportToCSV, formatCurrency } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
-import { useMovements } from '../lib/hooks';
+import { useMovements, useAllMovements } from '../lib/hooks';
 import type { Database } from '../lib/database.types';
 
 type Movement = Database['public']['Tables']['mouvements']['Row'];
@@ -20,6 +20,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [showForm, setShowForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
+  const [printMode, setPrintMode] = useState<'current' | 'all' | null>(null);
   
   // Pagination state
   const [page, setPage] = useState(1);
@@ -37,7 +38,17 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     typeFilter: typeFilter === 'ALL' ? undefined : typeFilter,
   });
 
+  // Fetch all movements when printing all
+  const { data: allMovementsData } = useAllMovements({
+    searchTerm,
+    month: selectedMonth,
+    typeFilter: typeFilter === 'ALL' ? undefined : typeFilter,
+    enabled: printMode === 'all',
+  });
+
   const movements = movementsData?.data || [];
+  const allMovements = allMovementsData || [];
+  const displayMovements = printMode === 'all' ? allMovements : movements;
   const totalMovements = movementsData?.total || 0;
   const totalPages = movementsData?.pageCount || 1;
 
@@ -197,6 +208,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     exportToCSV(exportData, `mouvements_${selectedMonth}`);
   }
 
+  function handlePrint(mode: 'current' | 'all') {
+    setPrintMode(mode);
+    // Small delay to allow state update before printing
+    setTimeout(() => {
+      window.print();
+      setPrintMode(null);
+    }, 100);
+  }
+
   const typeColors: Record<Movement['type_mouvement'], string> = {
     ENTREE: 'bg-green-100 text-green-700',
     SORTIE: 'bg-red-100 text-red-700',
@@ -223,22 +243,54 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Mouvements de Stock</h2>
+          <h2 className="text-2xl font-bold text-slate-800 print:text-center print:w-full">Mouvements de Stock</h2>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium print:hidden"
           >
             <Plus className="w-4 h-4" />
             Nouveau Mouvement
           </button>
         </div>
-        <button
-          onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium sm:self-start"
-        >
-          <Upload className="w-4 h-4" />
-          Exporter
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 print:hidden">
+          <button
+            onClick={handleExport}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+          >
+            <Upload className="w-4 h-4" />
+            Exporter CSV
+          </button>
+          <button
+            onClick={() => handlePrint('current')}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimer Page Actuelle
+          </button>
+          <button
+            onClick={() => handlePrint('all')}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-sm font-medium"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimer Tout
+          </button>
+        </div>
+      </div>
+
+      {/* Print Header - Only visible when printing */}
+      <div className="hidden print:block mb-6">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold text-slate-800">CHRB - Gestion de Stock</h1>
+          <h2 className="text-xl font-semibold text-slate-700 mt-2">Mouvements de Stock</h2>
+          <p className="text-sm text-slate-600 mt-2">
+            Période: {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+          </p>
+          {searchTerm && <p className="text-sm text-slate-600">Recherche: {searchTerm}</p>}
+          {typeFilter !== 'ALL' && <p className="text-sm text-slate-600">Filtre: {typeFilter}</p>}
+          <p className="text-sm text-slate-500 mt-1">
+            Imprimé le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}
+          </p>
+        </div>
       </div>
 
       {showForm && (
@@ -441,7 +493,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 </tr>
               </thead>
               <tbody>
-                {movements.map((movement: any) => {
+                {displayMovements.map((movement: any) => {
                   // Calculate expiry status
                   let expiryClass = '';
                   let expiryText = '';
@@ -521,14 +573,16 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             <div className="text-center py-8 text-slate-500">Aucun mouvement trouvé</div>
           )}
           
-          <PaginationControls
-            currentPage={page}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={totalMovements}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
+          <div className="print:hidden">
+            <PaginationControls
+              currentPage={page}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalMovements}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </div>
         </div>
       </div>
 
