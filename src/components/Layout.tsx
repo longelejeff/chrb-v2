@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Package, Home, TrendingUp, ClipboardList, Calendar,
-  AlertTriangle, LogOut, Menu, X, ChevronLeft, ChevronRight, Users
+  AlertTriangle, LogOut, Menu, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getCurrentMonth, getPreviousMonth, getNextMonth, formatMonth } from '../lib/utils';
 
@@ -18,8 +18,6 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
   const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isAdmin = profile?.role === 'ADMIN';
-
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'products', label: 'Produits', icon: Package },
@@ -27,7 +25,6 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
     { id: 'inventory', label: 'Inventaire', icon: ClipboardList },
     { id: 'expiry', label: 'Péremptions', icon: AlertTriangle },
     { id: 'transfer', label: 'Transfert Stock', icon: Calendar },
-    ...(isAdmin ? [{ id: 'users', label: 'Utilisateurs', icon: Users }] : []),
   ];
 
   const handleSignOut = async () => {
@@ -41,8 +38,8 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-30">
-        <div className="px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -50,26 +47,26 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <div className="flex items-center gap-2">
-                <div className="bg-blue-600 p-1.5 rounded-lg">
-                  <Package className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <Package className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-slate-800">CHRB</h1>
-                  <p className="text-xs text-slate-600 hidden sm:block">Gestion de Stock</p>
+                  <h1 className="text-xl font-bold text-slate-800">CHRB</h1>
+                  <p className="text-xs text-slate-600">Gestion de Stock</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-3">
-              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100 rounded-lg px-1.5 sm:px-3 py-1.5">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-1 sm:gap-2 bg-slate-100 rounded-lg px-2 sm:px-4 py-2">
                 <button
                   onClick={() => onMonthChange(getPreviousMonth(selectedMonth))}
                   className="p-1 hover:bg-white rounded transition-colors"
                 >
-                  <ChevronLeft className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                  <ChevronLeft className="w-3 sm:w-4 h-3 sm:h-4" />
                 </button>
-                <span className="font-medium text-slate-700 min-w-[80px] sm:min-w-[110px] text-center text-xs">
+                <span className="font-medium text-slate-700 min-w-[90px] sm:min-w-[120px] text-center text-xs sm:text-sm">
                   {formatMonth(selectedMonth)}
                 </span>
                 <button
@@ -77,7 +74,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
                   className="p-1 hover:bg-white rounded transition-colors disabled:opacity-50"
                   disabled={selectedMonth >= getCurrentMonth()}
                 >
-                  <ChevronRight className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                  <ChevronRight className="w-3 sm:w-4 h-3 sm:h-4" />
                 </button>
               </div>
 
@@ -151,7 +148,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
           />
         )}
 
-        <main className="flex-1 p-3 sm:p-4 lg:p-6">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

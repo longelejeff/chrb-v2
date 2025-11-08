@@ -156,13 +156,13 @@ export function ExpiryPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h2 className="text-xl font-bold text-slate-800">Péremptions</h2>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-2xl font-bold text-slate-800">Gestion des Péremptions</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             <Plus className="w-4 h-4" />
             Ajouter
@@ -170,52 +170,52 @@ export function ExpiryPage() {
         </div>
         <button
           onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium sm:self-start"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium sm:self-start"
         >
           Exporter
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-600">Total</p>
-              <p className="text-2xl font-bold text-slate-800 mt-0.5">{expiries.length}</p>
+              <p className="text-sm text-slate-600">Total</p>
+              <p className="text-3xl font-bold text-slate-800 mt-1">{expiries.length}</p>
             </div>
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-blue-600" />
+            <div className="bg-blue-100 p-3 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-600">Bientôt</p>
-              <p className="text-2xl font-bold text-orange-600 mt-0.5">{soonCount}</p>
+              <p className="text-sm text-slate-600">Bientôt expirés</p>
+              <p className="text-3xl font-bold text-orange-600 mt-1">{soonCount}</p>
             </div>
-            <div className="bg-orange-100 p-2 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-orange-600" />
+            <div className="bg-orange-100 p-3 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-orange-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-600">Expirés</p>
-              <p className="text-2xl font-bold text-red-600 mt-0.5">{expiredCount}</p>
+              <p className="text-sm text-slate-600">Expirés</p>
+              <p className="text-3xl font-bold text-red-600 mt-1">{expiredCount}</p>
             </div>
-            <div className="bg-red-100 p-2 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-red-600" />
+            <div className="bg-red-100 p-3 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
-        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <div className="flex-1 flex items-center gap-2">
             <Search className="w-5 h-5 text-slate-400" />
             <input
@@ -223,13 +223,13 @@ export function ExpiryPage() {
               placeholder="Rechercher un produit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             />
           </div>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
-            className="w-full sm:w-auto px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
           >
             <option value="all">Tous</option>
             <option value="soon">Bientôt expirés (≤30j)</option>
@@ -237,17 +237,17 @@ export function ExpiryPage() {
           </select>
         </div>
 
-        <div className="overflow-x-auto -mx-3 sm:mx-0">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Produit</th>
-                  <th className="text-left py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Date</th>
-                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Qté</th>
-                  <th className="hidden md:table-cell text-left py-2 px-3 text-xs font-semibold text-slate-700">Emplac.</th>
-                  <th className="text-left py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Statut</th>
-                  <th className="text-right py-2 px-2 sm:px-3 text-xs font-semibold text-slate-700">Act.</th>
+                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
+                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Date</th>
+                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Qté</th>
+                  <th className="hidden md:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Emplacement</th>
+                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Statut</th>
+                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,27 +255,27 @@ export function ExpiryPage() {
                   const status = getExpiryStatus(expiry.date_peremption);
                   return (
                     <tr key={expiry.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-2 px-2 sm:px-3">
-                        <div className="text-xs text-slate-700 font-medium truncate max-w-[100px] sm:max-w-none">{expiry.product?.nom}</div>
+                      <td className="py-3 px-3 sm:px-4">
+                        <div className="text-xs sm:text-sm text-slate-700 font-medium">{expiry.product?.nom}</div>
                         {expiry.emplacement && (
-                          <div className="md:hidden text-xs text-slate-500 mt-0.5 truncate">{expiry.emplacement}</div>
+                          <div className="md:hidden text-xs text-slate-500 mt-0.5">{expiry.emplacement}</div>
                         )}
                       </td>
-                      <td className="py-2 px-2 sm:px-3 text-xs text-slate-700 whitespace-nowrap">{formatDate(expiry.date_peremption)}</td>
-                      <td className="py-2 px-2 sm:px-3 text-xs text-slate-700 text-right">{expiry.quantite}</td>
-                      <td className="hidden md:table-cell py-2 px-3 text-xs text-slate-600 truncate max-w-[100px]">{expiry.emplacement || '-'}</td>
-                      <td className="py-2 px-2 sm:px-3">
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${status.color}`}>
+                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(expiry.date_peremption)}</td>
+                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right">{expiry.quantite}</td>
+                      <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-600">{expiry.emplacement || '-'}</td>
+                      <td className="py-3 px-3 sm:px-4">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${status.color}`}>
                           <span className="hidden sm:inline">{status.label} </span>({status.days}j)
                         </span>
                       </td>
-                      <td className="py-2 px-2 sm:px-3 text-right">
+                      <td className="py-3 px-3 sm:px-4 text-right">
                         <button
                           onClick={() => setConfirmDelete({ show: true, id: expiry.id })}
-                          className="p-1 hover:bg-slate-100 rounded transition-colors"
+                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                           title="Supprimer"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                          <Trash2 className="w-4 h-4 text-red-600" />
                         </button>
                       </td>
                     </tr>

@@ -9,7 +9,6 @@ import { MovementsPage } from './components/MovementsPage';
 import { InventoryPage } from './components/InventoryPage';
 import { ExpiryPage } from './components/ExpiryPage';
 import { TransferPage } from './components/TransferPage';
-import { UsersPage } from './components/UsersPage';
 import { getCurrentMonth } from './lib/utils';
 
 function AppContent() {
@@ -45,7 +44,6 @@ function AppContent() {
       {currentView === 'inventory' && <InventoryPage selectedMonth={selectedMonth} />}
       {currentView === 'expiry' && <ExpiryPage />}
       {currentView === 'transfer' && <TransferPage selectedMonth={selectedMonth} />}
-      {currentView === 'users' && <UsersPage />}
     </Layout>
   );
 }
