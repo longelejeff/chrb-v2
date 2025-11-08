@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Package, Home, TrendingUp, ClipboardList, Calendar,
-  AlertTriangle, LogOut, Menu, X, ChevronLeft, ChevronRight
+  AlertTriangle, LogOut, Menu, X, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
 import { getCurrentMonth, getPreviousMonth, getNextMonth, formatMonth } from '../lib/utils';
 
@@ -18,6 +18,8 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
   const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const isAdmin = profile?.role === 'ADMIN';
+
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'products', label: 'Produits', icon: Package },
@@ -25,6 +27,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
     { id: 'inventory', label: 'Inventaire', icon: ClipboardList },
     { id: 'expiry', label: 'Péremptions', icon: AlertTriangle },
     { id: 'transfer', label: 'Transfert Stock', icon: Calendar },
+    ...(isAdmin ? [{ id: 'users', label: 'Utilisateurs', icon: Users }] : []),
   ];
 
   const handleSignOut = async () => {
