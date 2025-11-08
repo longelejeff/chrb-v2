@@ -4,6 +4,8 @@ import { useToast } from '../contexts/ToastContext';
 import { Search, Plus, Upload, Edit2, X, Save, Power, PowerOff, FileText, AlertCircle } from 'lucide-react';
 import { exportToCSV, formatCurrency } from '../lib/utils';
 import { generateProductCode, normalizeProductCode, generateUniqueCode } from '../lib/codeGenerator';
+import { PaginationControls } from './PaginationControls';
+import { useProducts } from '../lib/hooks';
 import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -23,14 +25,30 @@ interface QuickImportPreview {
 
 export function ProductsPage() {
   const { showToast } = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showQuickImport, setShowQuickImport] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
   const [generatedCode, setGeneratedCode] = useState('');
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('products_pageSize');
+    return saved ? parseInt(saved) : 25;
+  });
+
+  // Use React Query hook for products
+  const { data: productsData, isLoading, refetch } = useProducts({
+    page,
+    pageSize,
+    searchTerm,
+  });
+
+  const products = productsData?.data || [];
+  const totalProducts = productsData?.total || 0;
+  const totalPages = productsData?.pageCount || 1;
+
   const [duplicateConfirm, setDuplicateConfirm] = useState<DuplicateConfirmation>({
     show: false,
     code: '',
@@ -56,18 +74,10 @@ export function ProductsPage() {
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Reset to page 1 when search changes
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  useEffect(() => {
-    const filtered = products.filter(p =>
-      p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.classe_therapeutique || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredProducts(filtered);
-  }, [searchTerm, products]);
+    setPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!editingProduct) {
@@ -85,23 +95,6 @@ export function ProductsPage() {
     }));
     setQuickImportPreviews(previews);
   }, [quickImportText]);
-
-  async function loadProducts() {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('nom');
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      showToast('error', 'Erreur lors du chargement des produits.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function validateForm(): boolean {
     const errors: Record<string, string> = {};
@@ -233,7 +226,7 @@ export function ProductsPage() {
       }
 
       setShowModal(false);
-      loadProducts();
+      refetch();
     } catch (error: any) {
       throw error;
     }
@@ -247,7 +240,7 @@ export function ProductsPage() {
         .eq('id', product.id);
 
       if (error) throw error;
-      loadProducts();
+      refetch();
       showToast('success', `Produit "${product.nom}" ${!product.actif ? 'activé' : 'désactivé'}.`);
     } catch (error: any) {
       showToast('error', 'Erreur lors de la modification du statut.');
@@ -302,7 +295,7 @@ export function ProductsPage() {
         if (error) throw error;
 
         showToast('success', `${productsToImport.length} produit(s) importé(s) avec succès.`);
-        loadProducts();
+        refetch();
       } catch (error: any) {
         showToast('error', `Erreur lors de l'importation : ${error.message}`);
       }
@@ -369,11 +362,11 @@ export function ProductsPage() {
     setShowQuickImport(false);
     setQuickImportText('');
     setQuickImportPreviews([]);
-    loadProducts();
+    refetch();
   }
 
   function handleExport() {
-    const exportData = filteredProducts.map(p => ({
+    const exportData = products.map((p: Product) => ({
       code: p.code,
       nom: p.nom,
       forme: p.forme || '',
@@ -386,7 +379,17 @@ export function ProductsPage() {
     exportToCSV(exportData, 'produits');
   }
 
-  if (loading) {
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+  }
+
+  function handlePageSizeChange(newSize: number) {
+    setPageSize(newSize);
+    setPage(1);
+    localStorage.setItem('products_pageSize', newSize.toString());
+  }
+
+  if (isLoading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
@@ -459,7 +462,7 @@ export function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <tr key={product.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="py-3 px-3 sm:px-4">
                       <div className="text-sm text-slate-700 font-medium">{product.nom}</div>
@@ -508,10 +511,19 @@ export function ProductsPage() {
               </tbody>
             </table>
           </div>
-          {filteredProducts.length === 0 && (
+          {products.length === 0 && (
             <div className="text-center py-8 text-slate-500">Aucun produit trouvé</div>
           )}
         </div>
+
+        <PaginationControls
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalProducts}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
 
       {showModal && (

@@ -185,6 +185,40 @@ export function useInventory({ page, pageSize, searchTerm = '', month }: Paginat
   });
 }
 
+// Inventory Lines hook (for the Inventory page with lignes_inventaire)
+export function useInventoryLines({ page, pageSize, searchTerm = '', inventoryId }: PaginationParams & { inventoryId?: string }) {
+  return useQuery({
+    queryKey: ['inventory-lines', page, pageSize, searchTerm, inventoryId],
+    enabled: !!inventoryId,
+    queryFn: async (): Promise<PaginatedResponse<any>> => {
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      let query = supabase
+        .from('lignes_inventaire')
+        .select('*, product:products(*)', { count: 'exact' })
+        .eq('inventaire_id', inventoryId!)
+        .order('product(nom)');
+
+      if (searchTerm) {
+        query = query.or(
+          `product.nom.ilike.%${searchTerm}%,product.code.ilike.%${searchTerm}%`
+        );
+      }
+
+      const { data, error, count } = await query.range(start, end);
+
+      if (error) throw error;
+
+      return {
+        data: data || [],
+        total: count || 0,
+        pageCount: Math.ceil((count || 0) / pageSize),
+      };
+    },
+  });
+}
+
 // Users hook
 export function useUsers({ page, pageSize, searchTerm = '' }: PaginationParams) {
   return useQuery({

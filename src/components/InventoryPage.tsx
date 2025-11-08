@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Save, Lock, Search, Upload } from 'lucide-react';
 import { formatNumber, exportToCSV, formatDate } from '../lib/utils';
+import { PaginationControls } from './PaginationControls';
+import { useInventoryLines } from '../lib/hooks';
 import ConfirmModal from './ConfirmModal';
 import type { Database } from '../lib/database.types';
 
@@ -19,15 +21,38 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [inventory, setInventory] = useState<Inventory | null>(null);
-  const [lines, setLines] = useState<InventoryLineWithProduct[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showValidateModal, setShowValidateModal] = useState(false);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('inventory_pageSize');
+    return saved ? parseInt(saved) : 25;
+  });
+
+  // Use React Query hook for inventory lines
+  const { data: linesData, isLoading: linesLoading, refetch } = useInventoryLines({
+    page,
+    pageSize,
+    searchTerm,
+    inventoryId: inventory?.id,
+  });
+
+  const lines = linesData?.data || [];
+  const totalLines = linesData?.total || 0;
+  const totalPages = linesData?.pageCount || 1;
+
   useEffect(() => {
     loadInventory();
   }, [selectedMonth]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   async function loadInventory() {
     try {
@@ -56,14 +81,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
 
       setInventory(inv);
 
-      const { data: linesData, error: linesError } = await supabase
-        .from('lignes_inventaire')
-        .select('*, product:products(*)')
-        .eq('inventaire_id', inv.id)
-        .order('product(nom)');
-
-      if (linesError) throw linesError;
-      setLines(linesData as any || []);
+      // Refetch lines after inventory is loaded
+      refetch();
     } catch (error) {
       console.error('Error loading inventory:', error);
     } finally {
@@ -146,11 +165,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
 
       if (error) throw error;
 
-      setLines(lines.map(l =>
-        l.id === lineId
-          ? { ...l, stock_physique: stockPhysique, ecart }
-          : l
-      ));
+      refetch();
     } catch (error: any) {
       showToast('error', `Erreur: ${error.message}`);
     }
@@ -187,7 +202,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   function handleExport() {
-    const exportData = filteredLines.map(l => ({
+    const exportData = lines.map((l: any) => ({
       produit: l.product?.nom || '',
       code: l.product?.code || '',
       stock_theorique: l.stock_theorique || 0,
@@ -197,10 +212,15 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
     exportToCSV(exportData, `inventaire_${selectedMonth}`);
   }
 
-  const filteredLines = lines.filter(l =>
-    l.product?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.product?.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+  }
+
+  function handlePageSizeChange(newSize: number) {
+    setPageSize(newSize);
+    setPage(1);
+    localStorage.setItem('inventory_pageSize', newSize.toString());
+  }
 
   const isValidated = inventory?.statut === 'VALIDE';
 
@@ -269,7 +289,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredLines.map((line) => (
+                {lines.map((line: any) => (
                   <tr key={line.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 font-medium">{line.product?.nom}</td>
                     <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right">{formatNumber(line.stock_theorique)}</td>
@@ -305,10 +325,19 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
               </tbody>
             </table>
           </div>
-          {filteredLines.length === 0 && (
+          {lines.length === 0 && (
             <div className="text-center py-8 text-slate-500">Aucun produit trouvé</div>
           )}
         </div>
+
+        <PaginationControls
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalLines}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
 
       {!isValidated && (
