@@ -5,6 +5,8 @@ import { useToast } from '../contexts/ToastContext';
 import { Plus, Search, Upload, Trash2 } from 'lucide-react';
 import { formatDate, formatNumber, exportToCSV, formatCurrency } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
+import { PaginationControls } from './PaginationControls';
+import { useMovements } from '../lib/hooks';
 import type { Database } from '../lib/database.types';
 
 type Movement = Database['public']['Tables']['mouvements']['Row'];
@@ -17,13 +19,31 @@ interface MovementWithProduct extends Movement {
 export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const [movements, setMovements] = useState<MovementWithProduct[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('movements_pageSize');
+    return saved ? parseInt(saved) : 25;
+  });
+
+  // Use React Query hook for movements
+  const { data: movementsData, isLoading, refetch } = useMovements({
+    page,
+    pageSize,
+    searchTerm,
+    month: selectedMonth,
+    typeFilter: typeFilter === 'ALL' ? undefined : typeFilter,
+  });
+
+  const movements = movementsData?.data || [];
+  const totalMovements = movementsData?.total || 0;
+  const totalPages = movementsData?.pageCount || 1;
 
   const [formData, setFormData] = useState({
     product_id: '',
@@ -40,9 +60,10 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     loadProducts();
   }, []);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    loadMovements();
-  }, [selectedMonth]);
+    setPage(1);
+  }, [searchTerm, typeFilter, selectedMonth]);
 
   async function loadProducts() {
     try {
@@ -56,25 +77,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       setProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
-    }
-  }
-
-  async function loadMovements() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('mouvements')
-        .select('*, product:products(*)')
-        .eq('mois', selectedMonth)
-        .order('date_mouvement', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setMovements(data as any || []);
-    } catch (error) {
-      console.error('Error loading movements:', error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -111,16 +113,26 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
       const valeur_stock = newStock * (product.prix_unitaire || 0);
 
+      // Prepare movement data - force date_peremption to null for SORTIE
+      const movementData = {
+        product_id: formData.product_id,
+        type_mouvement: formData.type_mouvement,
+        quantite: formData.quantite,
+        date_mouvement: formData.date_mouvement,
+        note: formData.note,
+        prix_unitaire: formData.prix_unitaire,
+        lot_numero: formData.lot_numero || null,
+        date_peremption: formData.type_mouvement === 'SORTIE' ? null : (formData.date_peremption || null),
+        mois: selectedMonth,
+        created_by: user.id,
+        valeur_totale,
+        solde_apres: newStock,
+      };
+
       // @ts-ignore - New fields added to database
       const { error: movementError } = await supabase
         .from('mouvements')
-        .insert([{
-          ...formData,
-          mois: selectedMonth,
-          created_by: user.id,
-          valeur_totale,
-          solde_apres: newStock,
-        }]);
+        .insert([movementData]);
 
       if (movementError) throw movementError;
 
@@ -148,7 +160,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         date_peremption: '',
       });
       setShowForm(false);
-      loadMovements();
+      refetch();
       loadProducts();
     } catch (error: any) {
       showToast('error', `Erreur: ${error.message}`);
@@ -164,14 +176,14 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
       if (error) throw error;
       showToast('success', 'Mouvement supprimé avec succès.');
-      loadMovements();
+      refetch();
     } catch (error: any) {
       showToast('error', `Erreur: ${error.message}`);
     }
   }
 
   function handleExport() {
-    const exportData = filteredMovements.map(m => ({
+    const exportData = movements.map(m => ({
       date: formatDate(m.date_mouvement),
       type: m.type_mouvement,
       produit: m.product?.nom || '',
@@ -189,13 +201,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     exportToCSV(exportData, `mouvements_${selectedMonth}`);
   }
 
-  const filteredMovements = movements.filter(m => {
-    const matchesSearch = m.product?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         m.product?.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'ALL' || m.type_mouvement === typeFilter;
-    return matchesSearch && matchesType;
-  });
-
   const typeColors: Record<Movement['type_mouvement'], string> = {
     ENTREE: 'bg-green-100 text-green-700',
     SORTIE: 'bg-red-100 text-red-700',
@@ -204,7 +209,17 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     MISE_AU_REBUT: 'bg-orange-100 text-orange-700',
   };
 
-  if (loading) {
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+  }
+
+  function handlePageSizeChange(newSize: number) {
+    setPageSize(newSize);
+    setPage(1);
+    localStorage.setItem('movements_pageSize', newSize.toString());
+  }
+
+  if (isLoading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
@@ -314,35 +329,35 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 />
               </div>
 
-              {formData.type_mouvement === 'ENTREE' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Numéro de lot <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.lot_numero}
-                      onChange={(e) => setFormData({ ...formData, lot_numero: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      placeholder="Ex: LOT-2025-001"
-                    />
-                  </div>
+              {(formData.type_mouvement === 'ENTREE' || formData.type_mouvement === 'SORTIE') && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Numéro de lot {formData.type_mouvement === 'ENTREE' && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    required={formData.type_mouvement === 'ENTREE'}
+                    value={formData.lot_numero}
+                    onChange={(e) => setFormData({ ...formData, lot_numero: e.target.value })}
+                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Ex: LOT-2025-001"
+                  />
+                </div>
+              )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Date de péremption <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.date_peremption}
-                      onChange={(e) => setFormData({ ...formData, date_peremption: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                    />
-                  </div>
-                </>
+              {formData.type_mouvement === 'ENTREE' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Date de péremption <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.date_peremption}
+                    onChange={(e) => setFormData({ ...formData, date_peremption: e.target.value })}
+                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  />
+                </div>
               )}
 
               <div className="md:col-span-2 lg:col-span-1">
@@ -430,7 +445,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredMovements.map((movement) => {
+                {movements.map((movement: any) => {
                   // Calculate expiry status
                   let expiryClass = '';
                   let expiryText = '';
@@ -506,9 +521,18 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
               </tbody>
             </table>
           </div>
-          {filteredMovements.length === 0 && (
+          {movements.length === 0 && (
             <div className="text-center py-8 text-slate-500">Aucun mouvement trouvé</div>
           )}
+          
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalMovements}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
       </div>
 
