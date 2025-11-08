@@ -30,6 +30,7 @@ export function ProductsPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   
   // UI state
   const [showModal, setShowModal] = useState(false);
@@ -61,11 +62,21 @@ export function ProductsPage() {
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Debounce search term to avoid too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(0); // Reset to first page when search changes
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Use React Query for data fetching with pagination
   const { data: productsData, isLoading, refetch } = useProducts({
     page,
     pageSize,
-    searchTerm,
+    searchTerm: debouncedSearchTerm,
   });
 
   const products = productsData?.data || [];

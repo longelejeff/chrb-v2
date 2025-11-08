@@ -29,8 +29,9 @@ export function useProducts({ page, pageSize, searchTerm = '' }: PaginationParam
         .order('nom');
 
       // Apply search filter if provided
-      if (searchTerm) {
-        query = query.or(`nom.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%`);
+      if (searchTerm && searchTerm.trim()) {
+        const searchPattern = `%${searchTerm.trim()}%`;
+        query = query.or(`nom.ilike.${searchPattern},code.ilike.${searchPattern},classe_therapeutique.ilike.${searchPattern}`);
       }
 
       // Apply pagination
