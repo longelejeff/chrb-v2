@@ -12,10 +12,6 @@ import type { Database } from '../lib/database.types';
 type Movement = Database['public']['Tables']['mouvements']['Row'];
 type Product = Database['public']['Tables']['products']['Row'];
 
-interface MovementWithProduct extends Movement {
-  product?: Product;
-}
-
 export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const { user } = useAuth();
   const { showToast } = useToast();
