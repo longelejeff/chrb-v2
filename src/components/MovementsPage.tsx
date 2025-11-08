@@ -175,17 +175,69 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   async function handleDelete() {
+    if (!confirmDelete.id) return;
+
     try {
-      const { error } = await supabase
+      // First, get the movement details to update the product stock
+      const { data: movement, error: fetchError } = await supabase
+        .from('mouvements')
+        .select('*, product:products(*)')
+        .eq('id', confirmDelete.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!movement) throw new Error('Mouvement introuvable');
+
+      // Calculate the new stock after removing this movement
+      const product = movement.product as any;
+      if (!product) throw new Error('Produit introuvable');
+
+      const currentStock = product.stock_actuel || 0;
+      let newStock = currentStock;
+
+      // Reverse the movement operation
+      if (movement.type_mouvement === 'ENTREE' || movement.type_mouvement === 'OUVERTURE') {
+        newStock = currentStock - movement.quantite;
+      } else if (movement.type_mouvement === 'SORTIE' || movement.type_mouvement === 'MISE_AU_REBUT') {
+        newStock = currentStock + movement.quantite;
+      } else if (movement.type_mouvement === 'AJUSTEMENT') {
+        newStock = currentStock - movement.quantite;
+      }
+
+      // Prevent negative stock
+      if (newStock < 0) {
+        throw new Error('La suppression de ce mouvement entraînerait un stock négatif. Impossible de supprimer.');
+      }
+
+      const valeur_stock = newStock * (product.prix_unitaire || 0);
+
+      // Delete the movement
+      const { error: deleteError } = await supabase
         .from('mouvements')
         .delete()
         .eq('id', confirmDelete.id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // Update product stock
+      // @ts-ignore - Supabase type inference issue
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({
+          stock_actuel: newStock,
+          valeur_stock,
+        })
+        .eq('id', movement.product_id);
+
+      if (updateError) throw updateError;
+
       showToast('success', 'Mouvement supprimé avec succès.');
+      setConfirmDelete({ show: false, id: '' });
       refetch();
+      loadProducts();
     } catch (error: any) {
-      showToast('error', `Erreur: ${error.message}`);
+      showToast('error', `Erreur lors de la suppression: ${error.message}`);
+      setConfirmDelete({ show: false, id: '' });
     }
   }
 
