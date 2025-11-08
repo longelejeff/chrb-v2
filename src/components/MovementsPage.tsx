@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Plus, Search, Upload, Trash2, Printer } from 'lucide-react';
-import { formatDate, formatNumber, exportToCSV, formatCurrency } from '../lib/utils';
+import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
 import { useMovements, useAllMovements } from '../lib/hooks';
@@ -243,7 +243,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800 print:text-center print:w-full">Mouvements de Stock</h2>
+          <h2 className="text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
           <button
             onClick={() => setShowForm(!showForm)}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium print:hidden"
@@ -280,15 +280,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       {/* Print Header - Only visible when printing */}
       <div className="hidden print:block mb-6">
         <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold text-slate-800">CHRB - Gestion de Stock</h1>
+          <h1 className="text-2xl font-bold text-slate-800">CHRB – Gestion de Stock</h1>
           <h2 className="text-xl font-semibold text-slate-700 mt-2">Mouvements de Stock</h2>
           <p className="text-sm text-slate-600 mt-2">
-            Période: {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+            Période: {formatMonth(selectedMonth)}
           </p>
           {searchTerm && <p className="text-sm text-slate-600">Recherche: {searchTerm}</p>}
           {typeFilter !== 'ALL' && <p className="text-sm text-slate-600">Filtre: {typeFilter}</p>}
           <p className="text-sm text-slate-500 mt-1">
-            Imprimé le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}
+            Imprimé le {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
       </div>
