@@ -24,19 +24,24 @@ export function formatNumber(num: number | null | undefined): string {
 }
 
 export function formatCurrency(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return '$0.00';
-  return `$${amount.toFixed(2)}`;
+  if (amount === null || amount === undefined) return '$0,00';
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount).replace('$US', '$').replace('US$', '$');
 }
 
 export function formatCurrencyCompact(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return '$0';
-  if (amount >= 1000000) {
-    return `$${(amount / 1000000).toFixed(1)}M`;
-  }
-  if (amount >= 1000) {
-    return `$${(amount / 1000).toFixed(1)}K`;
-  }
-  return `$${amount.toFixed(2)}`;
+  if (amount === null || amount === undefined) return '$0,00';
+  // Format avec séparateur de milliers (espace) et 2 décimales, style français
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount).replace('$US', '$').replace('US$', '$');
 }
 
 export function getPreviousMonth(month: string): string {

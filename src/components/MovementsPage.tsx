@@ -609,7 +609,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                         <strong>Stock disponible:</strong> {lotDetails.stock} unités
                       </p>
                       <p className="text-sm text-blue-800">
-                        <strong>Prix unitaire:</strong> ${lotDetails.prix_unitaire?.toFixed(2) || '0.00'}
+                        <strong>Prix unitaire:</strong> {formatCurrency(lotDetails.prix_unitaire)}
                       </p>
                       {lotDetails.date_peremption && (
                         <p className="text-sm text-blue-800">
