@@ -20,6 +20,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [productFilter, setProductFilter] = useState<string>(''); // New: filter by specific product
   const [showForm, setShowForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
   const [printMode, setPrintMode] = useState<'current' | 'all' | null>(null);
@@ -38,6 +39,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     searchTerm,
     month: selectedMonth,
     typeFilter: typeFilter === 'ALL' ? undefined : typeFilter,
+    productFilter: productFilter || undefined, // New: pass product filter
   });
 
   // Fetch all movements when printing all
@@ -45,6 +47,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     searchTerm,
     month: selectedMonth,
     typeFilter: typeFilter === 'ALL' ? undefined : typeFilter,
+    productFilter: productFilter || undefined, // New: pass product filter
     enabled: printMode === 'all',
   });
 
@@ -82,7 +85,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, typeFilter, selectedMonth]);
+  }, [searchTerm, typeFilter, productFilter, selectedMonth]);
 
   async function loadProducts() {
     try {
@@ -756,6 +759,18 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             />
           </div>
           <select
+            value={productFilter}
+            onChange={(e) => setProductFilter(e.target.value)}
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+          >
+            <option value="">Tous les produits</option>
+            {products.map(product => (
+              <option key={product.id} value={product.id}>
+                {product.code} - {product.nom}
+              </option>
+            ))}
+          </select>
+          <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
@@ -764,6 +779,16 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             <option value="ENTREE">Entrées</option>
             <option value="SORTIE">Sorties</option>
           </select>
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setProductFilter('');
+              setTypeFilter('ALL');
+            }}
+            className="w-full sm:w-auto px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm sm:text-base font-medium"
+          >
+            Réinitialiser
+          </button>
         </div>
 
         <div className="overflow-x-auto -mx-4 sm:mx-0">

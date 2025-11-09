@@ -51,9 +51,9 @@ export function useProducts({ page, pageSize, searchTerm = '' }: PaginationParam
 }
 
 // Movements hook
-export function useMovements({ page, pageSize, searchTerm = '', month, typeFilter }: PaginationParams & { month: string; typeFilter?: string }) {
+export function useMovements({ page, pageSize, searchTerm = '', month, typeFilter, productFilter }: PaginationParams & { month: string; typeFilter?: string; productFilter?: string }) {
   return useQuery({
-    queryKey: ['movements', page, pageSize, searchTerm, month, typeFilter],
+    queryKey: ['movements', page, pageSize, searchTerm, month, typeFilter, productFilter],
     queryFn: async (): Promise<PaginatedResponse<any>> => {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
@@ -76,6 +76,10 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
         query = query.eq('type_mouvement', typeFilter);
       }
 
+      if (productFilter) {
+        query = query.eq('product_id', productFilter);
+      }
+
       const { data, error, count } = await query.range(start, end);
 
       if (error) throw error;
@@ -92,9 +96,9 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
 }
 
 // All Movements hook (for printing)
-export function useAllMovements({ searchTerm = '', month, typeFilter, enabled }: { searchTerm?: string; month: string; typeFilter?: string; enabled: boolean }) {
+export function useAllMovements({ searchTerm = '', month, typeFilter, productFilter, enabled }: { searchTerm?: string; month: string; typeFilter?: string; productFilter?: string; enabled: boolean }) {
   return useQuery({
-    queryKey: ['all-movements', searchTerm, month, typeFilter],
+    queryKey: ['all-movements', searchTerm, month, typeFilter, productFilter],
     enabled,
     queryFn: async (): Promise<any[]> => {
       let query = supabase
@@ -112,6 +116,10 @@ export function useAllMovements({ searchTerm = '', month, typeFilter, enabled }:
 
       if (typeFilter && typeFilter !== 'ALL') {
         query = query.eq('type_mouvement', typeFilter);
+      }
+
+      if (productFilter) {
+        query = query.eq('product_id', productFilter);
       }
 
       const { data, error } = await query;
