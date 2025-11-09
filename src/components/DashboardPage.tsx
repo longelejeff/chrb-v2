@@ -136,7 +136,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           expired++;
         } else if (days <= 7) {
           expiringSoon7Days++;
-        } else if (days <= 30) {
+        } else if (days > 7 && days <= 30) {
           expiringSoon++;
         }
       }
