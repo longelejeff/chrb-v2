@@ -258,7 +258,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
       const valeur_stock = newStock * (product.prix_unitaire || 0);
 
-      // Prepare movement data - force date_peremption to null for SORTIE
+      // Prepare movement data
       const movementData = {
         product_id: formData.product_id,
         type_mouvement: formData.type_mouvement,
@@ -267,7 +267,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         note: formData.note,
         prix_unitaire: formData.prix_unitaire,
         lot_numero: formData.lot_numero || null,
-        date_peremption: formData.type_mouvement === 'SORTIE' ? null : (formData.date_peremption || null),
+        date_peremption: formData.date_peremption || null,
         mois: selectedMonth,
         created_by: user.id,
         valeur_totale,
