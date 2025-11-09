@@ -229,19 +229,19 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
-            <p className="text-sm text-slate-600 mt-1">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
               Statut: {isValidated ? (
                 <span className="text-green-600 font-medium">Validé</span>
               ) : (
                 <span className="text-orange-600 font-medium">Brouillon</span>
               )}
               {inventory?.validated_at && (
-                <span className="text-slate-500"> - Validé le {formatDate(inventory.validated_at)}</span>
+                <span className="text-slate-500 hidden sm:inline"> - Validé le {formatDate(inventory.validated_at)}</span>
               )}
             </p>
           </div>
@@ -249,31 +249,32 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             <button
               onClick={() => setShowValidateModal(true)}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm flex-shrink-0"
             >
-              <Lock className="w-4 h-4" />
-              Valider l'inventaire
+              <Lock className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Valider l'inventaire</span>
+              <span className="sm:hidden">Valider</span>
             </button>
           )}
         </div>
         <button
           onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium sm:self-start"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium sm:self-start"
         >
-          <Upload className="w-4 h-4" />
+          <Upload className="w-4 h-4 flex-shrink-0" />
           Exporter
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
           <input
             type="text"
             placeholder="Rechercher un produit..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
         </div>
 

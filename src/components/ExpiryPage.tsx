@@ -156,80 +156,81 @@ export function ExpiryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Gestion des Péremptions</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Gestion des Péremptions</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            Ajouter
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Ajouter</span>
+            <span className="sm:hidden">Nouveau</span>
           </button>
         </div>
         <button
           onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium sm:self-start"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium sm:self-start"
         >
           Exporter
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Total</p>
-              <p className="text-3xl font-bold text-slate-800 mt-1">{expiries.length}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-slate-600">Total</p>
+              <p className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">{expiries.length}</p>
             </div>
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-blue-600" />
+            <div className="bg-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Bientôt expirés</p>
-              <p className="text-3xl font-bold text-orange-600 mt-1">{soonCount}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-slate-600">Bientôt expirés</p>
+              <p className="text-2xl sm:text-3xl font-bold text-orange-600 mt-1">{soonCount}</p>
             </div>
-            <div className="bg-orange-100 p-3 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-orange-600" />
+            <div className="bg-orange-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Expirés</p>
-              <p className="text-3xl font-bold text-red-600 mt-1">{expiredCount}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-slate-600">Expirés</p>
+              <p className="text-2xl sm:text-3xl font-bold text-red-600 mt-1">{expiredCount}</p>
             </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className="bg-red-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4 mb-4">
-          <div className="flex-1 flex items-center gap-2">
-            <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
             <input
               type="text"
               placeholder="Rechercher un produit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+              className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
-            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm flex-shrink-0"
           >
             <option value="all">Tous</option>
             <option value="soon">Bientôt expirés (≤30j)</option>

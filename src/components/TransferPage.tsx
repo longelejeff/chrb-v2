@@ -153,50 +153,50 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-slate-800">Transfert de Stock</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Transfert de Stock</h2>
       </div>
 
       {!isAdmin && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-orange-800">Accès réservé aux administrateurs</p>
-            <p className="text-sm text-orange-700 mt-1">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 text-orange-600 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-orange-800">Accès réservé aux administrateurs</p>
+            <p className="text-xs sm:text-sm text-orange-700 mt-1">
               Seuls les utilisateurs avec le rôle ADMIN peuvent effectuer des transferts de stock.
             </p>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-          <div className="flex-1 w-full bg-blue-50 rounded-lg p-4 text-center">
-            <p className="text-xs sm:text-sm text-slate-600 mb-1">Mois source</p>
-            <p className="text-base sm:text-lg font-bold text-slate-800">{formatMonth(previousMonth)}</p>
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex-1 w-full bg-blue-50 rounded-lg p-3 sm:p-4 text-center">
+            <p className="text-xs text-slate-600 mb-1">Mois source</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-slate-800">{formatMonth(previousMonth)}</p>
           </div>
-          <ArrowRight className="w-6 h-6 text-slate-400 rotate-90 sm:rotate-0" />
-          <div className="flex-1 w-full bg-green-50 rounded-lg p-4 text-center">
-            <p className="text-xs sm:text-sm text-slate-600 mb-1">Mois destination</p>
-            <p className="text-base sm:text-lg font-bold text-slate-800">{formatMonth(selectedMonth)}</p>
+          <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 rotate-90 sm:rotate-0 flex-shrink-0" />
+          <div className="flex-1 w-full bg-green-50 rounded-lg p-3 sm:p-4 text-center">
+            <p className="text-xs text-slate-600 mb-1">Mois destination</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-slate-800">{formatMonth(selectedMonth)}</p>
           </div>
         </div>
 
         {hasTransferForCurrentMonth ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-green-800">Transfert déjà effectué</p>
-              <p className="text-sm text-green-700 mt-1">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 flex-shrink-0 text-green-600 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-green-800">Transfert déjà effectué</p>
+              <p className="text-xs sm:text-sm text-green-700 mt-1">
                 Les stocks non écoulés ont déjà été transférés pour cette période.
               </p>
             </div>
           </div>
         ) : (
           <>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-800">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm text-blue-800">
                 <strong>Fonctionnement:</strong> Cette opération va créer des mouvements d'ouverture pour {formatMonth(selectedMonth)}
                 basés sur les stocks restants de {formatMonth(previousMonth)}. Seuls les produits avec un stock positif seront transférés.
               </p>
@@ -205,38 +205,38 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
             <button
               onClick={() => setShowConfirmModal(true)}
               disabled={transferring || !isAdmin}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base"
+              className="w-full flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
             >
-              <ArrowRight className="w-5 h-5" />
-              {transferring ? 'Transfert en cours...' : 'Transférer les stocks non écoulés'}
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="truncate">{transferring ? 'Transfert en cours...' : 'Transférer les stocks non écoulés'}</span>
             </button>
           </>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Historique des transferts</h3>
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4 md:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-3 sm:mb-4">Historique des transferts</h3>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {transfers.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">Aucun transfert enregistré</div>
+            <div className="text-center py-8 text-slate-500 text-sm">Aucun transfert enregistré</div>
           ) : (
             transfers.map((transfer) => (
-              <div key={transfer.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="bg-white p-2 rounded">
+              <div key={transfer.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="bg-white p-2 rounded flex-shrink-0">
                     <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-sm sm:text-base font-medium text-slate-800">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm md:text-base font-medium text-slate-800 truncate">
                       {formatMonth(transfer.mois_source)} → {formatMonth(transfer.mois_destination)}
                     </p>
-                    <p className="text-xs sm:text-sm text-slate-600">
+                    <p className="text-xs text-slate-600">
                       {transfer.nb_produits} produit(s) transféré(s)
                     </p>
                   </div>
                 </div>
-                <div className="text-xs sm:text-sm text-slate-600 pl-11 sm:pl-0">
+                <div className="text-xs text-slate-600 pl-11 sm:pl-0 flex-shrink-0">
                   {formatDate(transfer.created_at)}
                 </div>
               </div>

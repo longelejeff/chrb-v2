@@ -185,47 +185,48 @@ export function UsersPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h2 className="text-xl font-bold text-slate-800">Gestion des Utilisateurs</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Gestion des Utilisateurs</h2>
         <button
           onClick={() => openModal()}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          Nouvel utilisateur
+          <Plus className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Nouvel utilisateur</span>
+          <span className="sm:hidden">Nouveau</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
-        <div className="flex items-center gap-2 mb-3">
-          <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
           <input
             type="text"
             placeholder="Rechercher par nom ou rôle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 min-w-0 px-3 py-1.5 sm:py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr className="border-b border-slate-200">
-                <th className="text-left py-2 px-3 text-xs font-semibold text-slate-700">Nom</th>
-                <th className="text-left py-2 px-3 text-xs font-semibold text-slate-700">Rôle</th>
-                <th className="text-right py-2 px-3 text-xs font-semibold text-slate-700">Actions</th>
+                <th className="text-left py-2 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Nom</th>
+                <th className="text-left py-2 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Rôle</th>
+                <th className="text-right py-2 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-2 px-3">
-                    <div className="text-sm text-slate-700 font-medium">{user.nom}</div>
+                  <td className="py-2 sm:py-3 px-3 sm:px-4">
+                    <div className="text-xs sm:text-sm text-slate-700 font-medium truncate">{user.nom}</div>
                   </td>
-                  <td className="py-2 px-3">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  <td className="py-2 sm:py-3 px-3 sm:px-4">
+                    <span className={`inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                       user.role === 'ADMIN' 
                         ? 'bg-purple-100 text-purple-700' 
                         : 'bg-blue-100 text-blue-700'
@@ -233,18 +234,18 @@ export function UsersPage() {
                       {user.role}
                     </span>
                   </td>
-                  <td className="py-2 px-3">
+                  <td className="py-2 sm:py-3 px-3 sm:px-4">
                     <div className="flex justify-end gap-1">
                       <button
                         onClick={() => openModal(user)}
-                        className="p-1.5 rounded text-blue-600 hover:bg-blue-50"
+                        className="p-1 sm:p-1.5 rounded text-blue-600 hover:bg-blue-50"
                         title="Modifier"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setConfirmDelete({ show: true, id: user.id, nom: user.nom })}
-                        className="p-1.5 rounded text-red-600 hover:bg-red-50"
+                        className="p-1 sm:p-1.5 rounded text-red-600 hover:bg-red-50"
                         title="Supprimer"
                         disabled={user.id === profile?.id}
                       >
@@ -265,18 +266,18 @@ export function UsersPage() {
 
       {/* Create/Edit User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h3 className="text-xl font-bold text-slate-800">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-xl w-full max-w-md my-8">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800">
                 {editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Nom complet *
