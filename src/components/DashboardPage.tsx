@@ -68,7 +68,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       };
     }
 
-    const { products, movements, lots } = data;
+    const { products, movements, allMovementsWithLots } = data;
 
     // @ts-ignore - Supabase type inference
     const activeProducts = products.filter(p => p.actif);
@@ -90,17 +90,45 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     // @ts-ignore - Supabase type inference
     const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
 
+    // Calculate lot stocks from movements (FEFO logic)
+    const lotStocks = new Map<string, { stock: number; date_peremption: string; product_id: string }>();
+    
+    // @ts-ignore - Supabase type inference
+    allMovementsWithLots.forEach(movement => {
+      // @ts-ignore - Supabase type inference
+      const key = `${movement.product_id}_${movement.lot_numero}`;
+      
+      if (!lotStocks.has(key)) {
+        lotStocks.set(key, {
+          // @ts-ignore - Supabase type inference
+          stock: 0,
+          // @ts-ignore - Supabase type inference
+          date_peremption: movement.date_peremption,
+          // @ts-ignore - Supabase type inference
+          product_id: movement.product_id,
+        });
+      }
+      
+      const lot = lotStocks.get(key)!;
+      // @ts-ignore - Supabase type inference
+      if (movement.type_mouvement === 'ENTREE') {
+        // @ts-ignore - Supabase type inference
+        lot.stock += movement.quantite;
+      } else {
+        // @ts-ignore - Supabase type inference
+        lot.stock -= movement.quantite;
+      }
+    });
+
     // Calculate expiration alerts from lots with stock > 0
     let expiringSoon = 0;
     let expiringSoon7Days = 0;
     let expired = 0;
     const now = new Date().getTime();
 
-    // @ts-ignore - Supabase type inference
-    lots.forEach(lot => {
-      // @ts-ignore - Supabase type inference
-      if (lot.date_peremption && lot.quantite > 0) {
-        // @ts-ignore - Supabase type inference
+    lotStocks.forEach(lot => {
+      // Only count lots with stock > 0
+      if (lot.stock > 0 && lot.date_peremption) {
         const expiryDate = new Date(lot.date_peremption).getTime();
         const days = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
         
