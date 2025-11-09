@@ -45,6 +45,8 @@ export function useProducts({ page, pageSize, searchTerm = '' }: PaginationParam
         pageCount: Math.ceil((count || 0) / pageSize),
       };
     },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
@@ -84,6 +86,8 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
         pageCount: Math.ceil((count || 0) / pageSize),
       };
     },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
