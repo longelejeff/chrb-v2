@@ -394,25 +394,29 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Produits</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Produits</h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">Gestion du catalogue</p>
+          </div>
           <button
             onClick={() => openModal()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
           >
             <Plus className="w-4 h-4" />
-            Nouveau
+            <span className="hidden sm:inline">Nouveau Produit</span>
+            <span className="sm:hidden">Ajouter</span>
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <button
             onClick={() => setShowQuickImport(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs sm:text-sm font-medium"
           >
-            <FileText className="w-4 h-4" />
-            Import Rapide
+            <FileText className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Import Rapide</span>
           </button>
           <label className="cursor-pointer">
             <input
@@ -421,30 +425,30 @@ export function ProductsPage() {
               onChange={handleImportCSV}
               className="hidden"
             />
-            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-              <Upload className="w-4 h-4" />
-              Importer CSV
+            <div className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium">
+              <Upload className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Importer CSV</span>
             </div>
           </label>
           <button
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium"
           >
-            <Upload className="w-4 h-4" />
-            Exporter
+            <Upload className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Exporter</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Search className="w-5 h-5 text-slate-400" />
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Rechercher par code, nom ou classe thérapeutique..."
+            placeholder="Rechercher..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
         </div>
 

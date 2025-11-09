@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock } from 'lucide-react';
-import { formatNumber, formatCurrency, formatCurrencyCompact, formatDate } from '../lib/utils';
+import { formatNumber, formatCurrencyCompact, formatDate } from '../lib/utils';
 
 interface DashboardStats {
   totalProducts: number;
@@ -222,63 +222,63 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">Tableau de Bord</h2>
-        <p className="text-sm text-slate-600 mt-1">Vue d'ensemble de la gestion de stock</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Tableau de Bord</h2>
+        <p className="text-xs sm:text-sm text-slate-600 mt-1">Vue d'ensemble de la gestion de stock</p>
       </div>
 
       {/* Vue 360° - Indicateurs principaux */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Valeur totale du stock */}
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm p-4 sm:p-6 text-white">
           <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-8 h-8 opacity-80" />
-            <Package className="w-6 h-6 opacity-60" />
+            <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 opacity-80" />
+            <Package className="w-5 h-5 sm:w-6 sm:h-6 opacity-60" />
           </div>
-          <p className="text-sm opacity-90">Valeur totale du stock</p>
-          <p className="text-3xl font-bold mt-1">{formatCurrencyCompact(stats.totalStockValue)}</p>
+          <p className="text-xs sm:text-sm opacity-90">Valeur totale du stock</p>
+          <p className="text-2xl sm:text-3xl font-bold mt-1 break-words">{formatCurrencyCompact(stats.totalStockValue)}</p>
           <p className="text-xs opacity-80 mt-1">{stats.activeProducts} produits actifs</p>
         </div>
 
         {/* Approvisionnements (Entrées) */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600 font-medium">Approvisionnements</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrencyCompact(stats.entriesValueMonth)}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-slate-600 font-medium truncate">Approvisionnements</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1 break-words">{formatCurrencyCompact(stats.entriesValueMonth)}</p>
               <p className="text-xs text-slate-500 mt-1">
-                <span className="font-semibold">{formatNumber(stats.entriesQtyMonth)}</span> unités reçues
+                <span className="font-semibold">{formatNumber(stats.entriesQtyMonth)}</span> unités
               </p>
             </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-600" />
+            <div className="bg-green-100 p-2 sm:p-3 rounded-lg flex-shrink-0 ml-2">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             </div>
           </div>
         </div>
 
         {/* Sorties (Ventes/Consommations) - Indicateur positif d'activité */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600 font-medium">Ventes & Consommations</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrencyCompact(stats.exitsValueMonth)}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-slate-600 font-medium truncate">Ventes & Conso.</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600 mt-1 break-words">{formatCurrencyCompact(stats.exitsValueMonth)}</p>
               <p className="text-xs text-slate-500 mt-1">
-                <span className="font-semibold">{formatNumber(stats.exitsQtyMonth)}</span> unités distribuées
+                <span className="font-semibold">{formatNumber(stats.exitsQtyMonth)}</span> unités
               </p>
             </div>
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <TrendingDown className="w-6 h-6 text-blue-600" />
+            <div className="bg-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0 ml-2">
+              <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
           </div>
         </div>
 
         {/* Flux net (Balance) */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600 font-medium">Flux net du mois</p>
-              <p className={`text-2xl font-bold mt-1 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-slate-600 font-medium truncate">Flux net du mois</p>
+              <p className={`text-xl sm:text-2xl font-bold mt-1 break-words ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
                 {stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? '+' : ''}
                 {formatCurrencyCompact(stats.entriesValueMonth - stats.exitsValueMonth)}
               </p>
@@ -287,33 +287,33 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
                 {formatNumber(stats.entriesQtyMonth - stats.exitsQtyMonth)} unités
               </p>
             </div>
-            <div className={`p-3 rounded-lg ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'bg-green-100' : 'bg-orange-100'}`}>
-              <DollarSign className={`w-6 h-6 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`} />
+            <div className={`p-2 sm:p-3 rounded-lg flex-shrink-0 ml-2 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'bg-green-100' : 'bg-orange-100'}`}>
+              <DollarSign className={`w-5 h-5 sm:w-6 sm:h-6 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`} />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Graphique d'activité du mois */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-indigo-100 p-2 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-indigo-600" />
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4">
+            <div className="bg-indigo-100 p-2 rounded-lg flex-shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-800">Activité du Mois</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité du Mois</h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Barre d'approvisionnement */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">Approvisionnements</span>
-                <span className="text-sm font-bold text-green-600">{formatCurrency(stats.entriesValueMonth)}</span>
+                <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">Approvisionnements</span>
+                <span className="text-xs sm:text-sm font-bold text-green-600 ml-2 flex-shrink-0">{formatCurrencyCompact(stats.entriesValueMonth)}</span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-slate-100 rounded-full h-2 sm:h-3 overflow-hidden">
                 <div 
-                  className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-green-500 to-green-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{ 
                     width: `${Math.min(100, stats.totalStockValue > 0 ? (stats.entriesValueMonth / stats.totalStockValue) * 100 : 0)}%` 
                   }}
@@ -325,12 +325,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
             {/* Barre de ventes */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">Ventes & Consommations</span>
-                <span className="text-sm font-bold text-blue-600">{formatCurrency(stats.exitsValueMonth)}</span>
+                <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">Ventes & Consommations</span>
+                <span className="text-xs sm:text-sm font-bold text-blue-600 ml-2 flex-shrink-0">{formatCurrencyCompact(stats.exitsValueMonth)}</span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-slate-100 rounded-full h-2 sm:h-3 overflow-hidden">
                 <div 
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{ 
                     width: `${Math.min(100, stats.totalStockValue > 0 ? (stats.exitsValueMonth / stats.totalStockValue) * 100 : 0)}%` 
                   }}
@@ -340,16 +340,16 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
             </div>
 
             {/* Comparaison */}
-            <div className="pt-4 border-t border-slate-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">Taux d'activité</span>
-                <span className="text-sm font-bold text-indigo-600">
+            <div className="pt-3 sm:pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs sm:text-sm font-medium text-slate-700">Taux d'activité</span>
+                <span className="text-xs sm:text-sm font-bold text-indigo-600">
                   {stats.totalStockValue > 0 
                     ? ((stats.exitsValueMonth / stats.totalStockValue) * 100).toFixed(1)
                     : 0}% du stock
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500">
                 Rotation: {stats.entriesValueMonth > 0 
                   ? ((stats.exitsValueMonth / stats.entriesValueMonth) * 100).toFixed(0)
                   : 0}% des entrées
@@ -359,33 +359,33 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
 
         {/* Top 5 Produits par Valeur */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Package className="w-5 h-5 text-blue-600" />
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4">
+            <div className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
+              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-800">Top 5 Produits par Valeur</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Top 5 Produits</h3>
           </div>
 
           {topProducts.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 text-slate-500 text-sm">
               Aucun produit avec valeur de stock
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {topProducts.map((product, index) => (
-                <div key={product.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 text-blue-700 font-bold text-sm w-8 h-8 rounded-full flex items-center justify-center">
+                <div key={product.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="bg-blue-100 text-blue-700 font-bold text-xs sm:text-sm w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0">
                       {index + 1}
                     </div>
-                    <div>
-                      <p className="font-medium text-slate-800">{product.nom}</p>
-                      <p className="text-xs text-slate-600">{product.code} • Stock: {formatNumber(product.stock_actuel)}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">{product.nom}</p>
+                      <p className="text-xs text-slate-600 truncate">{product.code} • {formatNumber(product.stock_actuel)}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-800">{formatCurrency(product.valeur_stock)}</p>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <p className="font-bold text-slate-800 text-xs sm:text-sm">{formatCurrencyCompact(product.valeur_stock)}</p>
                   </div>
                 </div>
               ))}
@@ -393,102 +393,102 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-orange-100 p-2 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4">
+            <div className="bg-orange-100 p-2 rounded-lg flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-800">Alertes</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Alertes</h3>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-              <div>
-                <p className="text-sm font-medium text-red-800">Produits expirés</p>
-                <p className="text-xs text-red-600 mt-1">Action immédiate requise</p>
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between p-3 sm:p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-red-800 truncate">Produits expirés</p>
+                <p className="text-xs text-red-600 mt-1">Action immédiate</p>
               </div>
-              <p className="text-3xl font-bold text-red-600">{stats.expired}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-red-600 ml-2 flex-shrink-0">{stats.expired}</p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
-              <div>
-                <p className="text-sm font-medium text-orange-800">Expirent dans 7 jours</p>
+            <div className="flex items-center justify-between p-3 sm:p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-orange-800 truncate">Expirent dans 7 jours</p>
                 <p className="text-xs text-orange-600 mt-1">Urgent</p>
               </div>
-              <p className="text-3xl font-bold text-orange-600">{stats.expiringSoon7Days}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-orange-600 ml-2 flex-shrink-0">{stats.expiringSoon7Days}</p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div>
-                <p className="text-sm font-medium text-yellow-800">Expirent dans 30 jours</p>
-                <p className="text-xs text-yellow-600 mt-1">Surveillance nécessaire</p>
+            <div className="flex items-center justify-between p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-yellow-800 truncate">Expirent dans 30 jours</p>
+                <p className="text-xs text-yellow-600 mt-1">Surveillance</p>
               </div>
-              <p className="text-3xl font-bold text-yellow-600">{stats.expiringSoon}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-yellow-600 ml-2 flex-shrink-0">{stats.expiringSoon}</p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg border border-amber-200">
-              <div>
-                <p className="text-sm font-medium text-amber-800">Stocks faibles</p>
-                <p className="text-xs text-amber-600 mt-1">Sous le seuil d'alerte</p>
+            <div className="flex items-center justify-between p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-amber-800 truncate">Stocks faibles</p>
+                <p className="text-xs text-amber-600 mt-1">Sous seuil</p>
               </div>
-              <p className="text-3xl font-bold text-amber-600">{stats.lowStockProducts}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-amber-600 ml-2 flex-shrink-0">{stats.lowStockProducts}</p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <div>
-                <p className="text-sm font-medium text-slate-800">Ruptures de stock</p>
+            <div className="flex items-center justify-between p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-800 truncate">Ruptures de stock</p>
                 <p className="text-xs text-slate-600 mt-1">Stock à zéro</p>
               </div>
-              <p className="text-3xl font-bold text-slate-600">{stats.outOfStockProducts}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-slate-600 ml-2 flex-shrink-0">{stats.outOfStockProducts}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <Clock className="w-5 h-5 text-purple-600" />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-4">
+          <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-800">Activité Récente</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
         </div>
 
         {recentMovements.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500 text-sm">
             Aucune activité récente
           </div>
         ) : (
           <div className="space-y-2">
             {recentMovements.map((movement) => (
-              <div key={movement.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
+              <div key={movement.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
                     {movement.type_mouvement === 'ENTREE' ? (
-                      <TrendingUp className={`w-4 h-4 text-green-600`} />
+                      <TrendingUp className={`w-3 h-3 sm:w-4 sm:h-4 text-green-600`} />
                     ) : (
-                      <TrendingDown className={`w-4 h-4 text-blue-600`} />
+                      <TrendingDown className={`w-3 h-3 sm:w-4 sm:h-4 text-blue-600`} />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-800 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">
                       {/* @ts-ignore - Joined table type */}
                       {movement.product?.nom || 'Produit inconnu'}
                     </p>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-600 truncate">
                       {/* @ts-ignore - Joined table type */}
                       {movement.product?.code || ''} 
                       {movement.lot_numero && ` • Lot: ${movement.lot_numero}`}
                       {/* @ts-ignore - Joined table type */}
-                      {movement.user?.email && ` • Par: ${movement.user.email.split('@')[0]}`}
+                      {movement.user?.email && ` • ${movement.user.email.split('@')[0]}`}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-bold text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
-                      {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
-                    </p>
-                    <p className="text-xs text-slate-500">{formatDate(movement.date_mouvement)}</p>
-                  </div>
+                </div>
+                <div className="text-right ml-2 flex-shrink-0">
+                  <p className={`font-bold text-xs sm:text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
+                    {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
+                  </p>
+                  <p className="text-xs text-slate-500 hidden sm:block">{formatDate(movement.date_mouvement)}</p>
                 </div>
               </div>
             ))}
@@ -497,24 +497,24 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       </div>
 
       {lowStockProducts.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-red-100 p-2 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4">
+            <div className="bg-red-100 p-2 rounded-lg flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-800">Produits en Alerte de Stock</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Produits en Alerte</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
             {lowStockProducts.slice(0, 6).map((product) => (
-              <div key={product.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div key={product.id} className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-800 text-sm">{product.nom}</p>
-                    <p className="text-xs text-slate-600 mt-1">{product.code}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">{product.nom}</p>
+                    <p className="text-xs text-slate-600 mt-1 truncate">{product.code}</p>
                   </div>
-                  <div className="text-right ml-2">
-                    <p className="text-lg font-bold text-red-600">{formatNumber(product.stock_actuel)}</p>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <p className="text-base sm:text-lg font-bold text-red-600">{formatNumber(product.stock_actuel)}</p>
                     <p className="text-xs text-slate-600">/ {formatNumber(product.seuil_alerte)}</p>
                   </div>
                 </div>
@@ -523,48 +523,50 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
 
           {lowStockProducts.length > 6 && (
-            <p className="text-sm text-slate-600 mt-3 text-center">
+            <p className="text-xs sm:text-sm text-slate-600 mt-3 text-center">
               +{lowStockProducts.length - 6} autre(s) produit(s) en alerte
             </p>
           )}
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200 p-6">
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200 p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Package className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-slate-800">Vue d'ensemble - {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h3>
+          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+          <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-slate-800 truncate">
+            Vue d'ensemble - {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+          </h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Stock Actuel</p>
-            <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalStockValue)}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-blue-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Stock Actuel</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 break-words">{formatCurrencyCompact(stats.totalStockValue)}</p>
             <p className="text-xs text-slate-500 mt-1">{stats.activeProducts} produits</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-green-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Approvisionnements</p>
-            <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.entriesValueMonth)}</p>
-            <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.entriesQtyMonth)} unités</p>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-green-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Approvision.</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 break-words">{formatCurrencyCompact(stats.entriesValueMonth)}</p>
+            <p className="text-xs text-slate-500 mt-1 truncate">{formatNumber(stats.entriesQtyMonth)} u.</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-600">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Ventes</p>
-            <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.exitsValueMonth)}</p>
-            <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.exitsQtyMonth)} unités</p>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-blue-600">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Ventes</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 break-words">{formatCurrencyCompact(stats.exitsValueMonth)}</p>
+            <p className="text-xs text-slate-500 mt-1 truncate">{formatNumber(stats.exitsQtyMonth)} u.</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-indigo-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Balance</p>
-            <p className={`text-2xl font-bold ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-indigo-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Balance</p>
+            <p className={`text-lg sm:text-xl lg:text-2xl font-bold break-words ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
               {stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? '+' : ''}
               {formatCurrencyCompact(stats.entriesValueMonth - stats.exitsValueMonth)}
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1 truncate">
               {stats.entriesQtyMonth - stats.exitsQtyMonth >= 0 ? '+' : ''}
-              {formatNumber(stats.entriesQtyMonth - stats.exitsQtyMonth)} unités
+              {formatNumber(stats.entriesQtyMonth - stats.exitsQtyMonth)} u.
             </p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-orange-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Alertes</p>
-            <p className="text-2xl font-bold text-orange-600">{stats.expired + stats.expiringSoon7Days + stats.expiringSoon + stats.lowStockProducts + stats.outOfStockProducts}</p>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-orange-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Alertes</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">{stats.expired + stats.expiringSoon7Days + stats.expiringSoon + stats.lowStockProducts + stats.outOfStockProducts}</p>
             <p className="text-xs text-slate-500 mt-1">À surveiller</p>
           </div>
         </div>
