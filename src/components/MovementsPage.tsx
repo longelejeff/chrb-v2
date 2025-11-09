@@ -52,16 +52,26 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const totalMovements = movementsData?.total || 0;
   const totalPages = movementsData?.pageCount || 1;
 
+  // Enhanced form state
   const [formData, setFormData] = useState({
     product_id: '',
-    type_mouvement: 'ENTREE' as Movement['type_mouvement'],
+    type_mouvement: 'ENTREE' as 'ENTREE' | 'SORTIE',
     quantite: 0,
     date_mouvement: new Date().toISOString().split('T')[0],
     note: '',
     prix_unitaire: 0,
     lot_numero: '',
     date_peremption: '',
+    fournisseur: '',
+    date_reception: new Date().toISOString().split('T')[0],
   });
+
+  // Lot management for SORTIE
+  const [availableLots, setAvailableLots] = useState<any[]>([]);
+  const [selectedLot, setSelectedLot] = useState<string>('');
+  const [lotDetails, setLotDetails] = useState<any>(null);
+  const [quantityError, setQuantityError] = useState<string>('');
+  const [isLoadingLots, setIsLoadingLots] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -88,13 +98,132 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   async function handleProductChange(productId: string) {
-    setFormData({ ...formData, product_id: productId });
+    setFormData(prev => ({ ...prev, product_id: productId }));
+    setSelectedLot('');
+    setLotDetails(null);
+    setQuantityError('');
 
     const product = products.find(p => p.id === productId);
-    if (product && product.prix_unitaire) {
+    
+    // For ENTREE, auto-fill prix_unitaire from product
+    if (formData.type_mouvement === 'ENTREE' && product && product.prix_unitaire) {
       setFormData(prev => ({ ...prev, product_id: productId, prix_unitaire: product.prix_unitaire || 0 }));
     } else {
       setFormData(prev => ({ ...prev, product_id: productId }));
+    }
+
+    // For SORTIE, load available lots
+    if (formData.type_mouvement === 'SORTIE' && productId) {
+      await loadAvailableLots(productId);
+    }
+  }
+
+  async function loadAvailableLots(productId: string) {
+    setIsLoadingLots(true);
+    try {
+      // Get all movements for this product with lot information
+      const { data: lotMovements, error } = await supabase
+        .from('mouvements')
+        .select('*')
+        .eq('product_id', productId)
+        .not('lot_numero', 'is', null)
+        .order('date_peremption', { ascending: true, nullsFirst: false });
+
+      if (error) throw error;
+
+      // Calculate stock per lot (FEFO - First Expiry First Out)
+      const lotMap = new Map<string, any>();
+      
+      lotMovements?.forEach((movement: any) => {
+        const lotKey = movement.lot_numero;
+        if (!lotMap.has(lotKey)) {
+          lotMap.set(lotKey, {
+            lot_numero: movement.lot_numero,
+            date_peremption: movement.date_peremption,
+            prix_unitaire: movement.prix_unitaire,
+            stock: 0,
+          });
+        }
+        
+        const lot = lotMap.get(lotKey);
+        if (movement.type_mouvement === 'ENTREE') {
+          lot.stock += movement.quantite;
+        } else if (movement.type_mouvement === 'SORTIE') {
+          lot.stock -= movement.quantite;
+        }
+      });
+
+      // Filter lots with stock > 0 and sort by expiry date (FEFO)
+      const activeLots = Array.from(lotMap.values())
+        .filter(lot => lot.stock > 0)
+        .sort((a, b) => {
+          if (!a.date_peremption) return 1;
+          if (!b.date_peremption) return -1;
+          return new Date(a.date_peremption).getTime() - new Date(b.date_peremption).getTime();
+        });
+
+      setAvailableLots(activeLots);
+    } catch (error) {
+      console.error('Error loading lots:', error);
+      showToast('error', 'Erreur lors du chargement des lots');
+    } finally {
+      setIsLoadingLots(false);
+    }
+  }
+
+  function handleLotChange(lotNumero: string) {
+    setSelectedLot(lotNumero);
+    const lot = availableLots.find(l => l.lot_numero === lotNumero);
+    
+    if (lot) {
+      setLotDetails(lot);
+      setFormData(prev => ({
+        ...prev,
+        lot_numero: lot.lot_numero,
+        prix_unitaire: lot.prix_unitaire || 0,
+        date_peremption: lot.date_peremption || '',
+      }));
+      
+      // Validate quantity
+      if (formData.quantite > lot.stock) {
+        setQuantityError(`Quantité disponible: ${lot.stock} unités`);
+      } else {
+        setQuantityError('');
+      }
+    }
+  }
+
+  function handleQuantityChange(qty: number) {
+    setFormData(prev => ({ ...prev, quantite: qty }));
+    
+    // Validate for SORTIE
+    if (formData.type_mouvement === 'SORTIE' && lotDetails) {
+      if (qty > lotDetails.stock) {
+        setQuantityError(`Quantité disponible: ${lotDetails.stock} unités`);
+      } else {
+        setQuantityError('');
+      }
+    }
+  }
+
+  function handleTypeChange(type: 'ENTREE' | 'SORTIE') {
+    setFormData(prev => ({
+      ...prev,
+      type_mouvement: type,
+      quantite: 0,
+      lot_numero: '',
+      date_peremption: '',
+      prix_unitaire: 0,
+      fournisseur: '',
+    }));
+    setSelectedLot('');
+    setLotDetails(null);
+    setQuantityError('');
+    setAvailableLots([]);
+
+    // If product selected and switching to SORTIE, load lots
+    if (type === 'SORTIE' && formData.product_id) {
+      loadAvailableLots(formData.product_id);
     }
   }
 
@@ -164,7 +293,13 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         prix_unitaire: 0,
         lot_numero: '',
         date_peremption: '',
+        fournisseur: '',
+        date_reception: new Date().toISOString().split('T')[0],
       });
+      setSelectedLot('');
+      setLotDetails(null);
+      setQuantityError('');
+      setAvailableLots([]);
       setShowForm(false);
       refetch();
       loadProducts();
@@ -178,6 +313,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
     try {
       // First, get the movement details to update the product stock
+      // @ts-ignore - Supabase type inference issue with joined tables
       const { data: movement, error: fetchError } = await supabase
         .from('mouvements')
         .select('*, product:products(*)')
@@ -188,6 +324,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       if (!movement) throw new Error('Mouvement introuvable');
 
       // Calculate the new stock after removing this movement
+      // @ts-ignore - Product type from join
       const product = movement.product as any;
       if (!product) throw new Error('Produit introuvable');
 
@@ -195,9 +332,13 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       let newStock = currentStock;
 
       // Reverse the movement operation: ENTREE adds (so subtract), SORTIE subtracts (so add back)
+      // @ts-ignore - Movement type
       if (movement.type_mouvement === 'ENTREE') {
+        // @ts-ignore - Movement type
         newStock = currentStock - movement.quantite;
+      // @ts-ignore - Movement type
       } else if (movement.type_mouvement === 'SORTIE') {
+        // @ts-ignore - Movement type
         newStock = currentStock + movement.quantite;
       }
 
@@ -224,6 +365,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           stock_actuel: newStock,
           valeur_stock,
         })
+        // @ts-ignore - Movement type
         .eq('id', movement.product_id);
 
       if (updateError) throw updateError;
@@ -365,7 +507,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 <select
                   required
                   value={formData.type_mouvement}
-                  onChange={(e) => setFormData({ ...formData, type_mouvement: e.target.value as Movement['type_mouvement'] })}
+                  onChange={(e) => handleTypeChange(e.target.value as 'ENTREE' | 'SORTIE')}
                   className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value="ENTREE">Entrée (Stock In)</option>
@@ -383,7 +525,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   step="1"
                   min="1"
                   value={formData.quantite}
-                  onChange={(e) => setFormData({ ...formData, quantite: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 0)}
                   className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
@@ -416,35 +558,111 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 />
               </div>
 
-              {(formData.type_mouvement === 'ENTREE' || formData.type_mouvement === 'SORTIE') && (
+              {/* LOT MANAGEMENT FOR SORTIE - Select from available lots */}
+              {formData.type_mouvement === 'SORTIE' && formData.product_id && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Numéro de lot {formData.type_mouvement === 'ENTREE' && <span className="text-red-500">*</span>}
+                    Sélectionner un lot <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    required={formData.type_mouvement === 'ENTREE'}
-                    value={formData.lot_numero}
-                    onChange={(e) => setFormData({ ...formData, lot_numero: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                    placeholder="Ex: LOT-2025-001"
-                  />
+                  {isLoadingLots ? (
+                    <div className="px-3 sm:px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-500">
+                      Chargement des lots...
+                    </div>
+                  ) : availableLots.length > 0 ? (
+                    <select
+                      required
+                      value={formData.lot_numero}
+                      onChange={(e) => handleLotChange(e.target.value)}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    >
+                      <option value="">Choisir un lot (FEFO)</option>
+                      {availableLots.map((lot) => (
+                        <option key={lot.lot_numero} value={lot.lot_numero}>
+                          {lot.lot_numero} - Stock: {lot.stock} - Expiration: {lot.date_peremption ? new Date(lot.date_peremption).toLocaleDateString('fr-FR') : 'N/A'}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="px-3 sm:px-4 py-2 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-700">
+                      Aucun lot disponible pour ce produit
+                    </div>
+                  )}
+                  {quantityError && (
+                    <p className="mt-1 text-sm text-red-600">{quantityError}</p>
+                  )}
+                  {lotDetails && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Stock disponible:</strong> {lotDetails.stock} unités
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        <strong>Prix unitaire:</strong> ${lotDetails.prix_unitaire?.toFixed(2) || '0.00'}
+                      </p>
+                      {lotDetails.date_peremption && (
+                        <p className="text-sm text-blue-800">
+                          <strong>Date de péremption:</strong> {new Date(lotDetails.date_peremption).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* LOT MANAGEMENT FOR ENTREE - Create new lot */}
               {formData.type_mouvement === 'ENTREE' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Date de péremption <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date_peremption}
-                    onChange={(e) => setFormData({ ...formData, date_peremption: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Numéro de lot <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.lot_numero}
+                      onChange={(e) => setFormData({ ...formData, lot_numero: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      placeholder="Ex: LOT-2025-001"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Date de péremption <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.date_peremption}
+                      onChange={(e) => setFormData({ ...formData, date_peremption: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Fournisseur
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.fournisseur}
+                      onChange={(e) => setFormData({ ...formData, fournisseur: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      placeholder="Nom du fournisseur"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Date de réception
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.date_reception}
+                      onChange={(e) => setFormData({ ...formData, date_reception: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    />
+                  </div>
+                </>
               )}
 
               <div className="md:col-span-2 lg:col-span-1">

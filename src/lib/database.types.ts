@@ -63,7 +63,7 @@ export interface Database {
         Row: {
           id: string
           product_id: string
-          type_mouvement: 'ENTREE' | 'SORTIE' | 'AJUSTEMENT' | 'OUVERTURE' | 'MISE_AU_REBUT'
+          type_mouvement: 'ENTREE' | 'SORTIE'
           quantite: number
           date_mouvement: string
           mois: string
@@ -72,12 +72,14 @@ export interface Database {
           prix_unitaire: number | null
           valeur_totale: number | null
           solde_apres: number | null
+          lot_numero: string | null
+          date_peremption: string | null
           created_at: string | null
         }
         Insert: {
           id?: string
           product_id: string
-          type_mouvement: 'ENTREE' | 'SORTIE' | 'AJUSTEMENT' | 'OUVERTURE' | 'MISE_AU_REBUT'
+          type_mouvement: 'ENTREE' | 'SORTIE'
           quantite: number
           date_mouvement?: string
           mois: string
@@ -86,12 +88,14 @@ export interface Database {
           prix_unitaire?: number | null
           valeur_totale?: number | null
           solde_apres?: number | null
+          lot_numero?: string | null
+          date_peremption?: string | null
           created_at?: string | null
         }
         Update: {
           id?: string
           product_id?: string
-          type_mouvement?: 'ENTREE' | 'SORTIE' | 'AJUSTEMENT' | 'OUVERTURE' | 'MISE_AU_REBUT'
+          type_mouvement?: 'ENTREE' | 'SORTIE'
           quantite?: number
           date_mouvement?: string
           mois?: string
@@ -100,6 +104,8 @@ export interface Database {
           prix_unitaire?: number | null
           valeur_totale?: number | null
           solde_apres?: number | null
+          lot_numero?: string | null
+          date_peremption?: string | null
           created_at?: string | null
         }
       }
