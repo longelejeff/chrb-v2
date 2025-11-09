@@ -45,9 +45,6 @@ interface RecentMovement {
     nom: string;
     code: string;
   };
-  user: {
-    email: string;
-  } | null;
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
@@ -441,8 +438,6 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
                       {/* @ts-ignore - Joined table type */}
                       {movement.product?.code || ''} 
                       {movement.lot_numero && ` • Lot: ${movement.lot_numero}`}
-                      {/* @ts-ignore - Joined table type */}
-                      {movement.user?.email && ` • ${movement.user.email.split('@')[0]}`}
                     </p>
                   </div>
                 </div>
