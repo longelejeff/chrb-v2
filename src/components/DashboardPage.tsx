@@ -91,7 +91,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
 
     // Calculate lot stocks from movements (FEFO logic)
-    const lotStocks = new Map<string, { stock: number; date_peremption: string; product_id: string }>();
+    const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
     
     // @ts-ignore - Supabase type inference
     allMovementsWithLots.forEach(movement => {
@@ -103,7 +103,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           // @ts-ignore - Supabase type inference
           stock: 0,
           // @ts-ignore - Supabase type inference
-          date_peremption: movement.date_peremption,
+          date_peremption: movement.date_peremption || null,
           // @ts-ignore - Supabase type inference
           product_id: movement.product_id,
         });
@@ -114,6 +114,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       if (movement.type_mouvement === 'ENTREE') {
         // @ts-ignore - Supabase type inference
         lot.stock += movement.quantite;
+        // Update expiry date from ENTREE movements (they have the date)
+        // @ts-ignore - Supabase type inference
+        if (movement.date_peremption) {
+          // @ts-ignore - Supabase type inference
+          lot.date_peremption = movement.date_peremption;
+        }
       } else {
         // @ts-ignore - Supabase type inference
         lot.stock -= movement.quantite;

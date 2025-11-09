@@ -141,7 +141,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         if (!lotMap.has(lotKey)) {
           lotMap.set(lotKey, {
             lot_numero: movement.lot_numero,
-            date_peremption: movement.date_peremption,
+            date_peremption: null,
             prix_unitaire: movement.prix_unitaire,
             stock: 0,
           });
@@ -150,6 +150,14 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         const lot = lotMap.get(lotKey);
         if (movement.type_mouvement === 'ENTREE') {
           lot.stock += movement.quantite;
+          // Update expiry date from ENTREE movements (they have the date)
+          if (movement.date_peremption) {
+            lot.date_peremption = movement.date_peremption;
+          }
+          // Update price from ENTREE movements
+          if (movement.prix_unitaire) {
+            lot.prix_unitaire = movement.prix_unitaire;
+          }
         } else if (movement.type_mouvement === 'SORTIE') {
           lot.stock -= movement.quantite;
         }
