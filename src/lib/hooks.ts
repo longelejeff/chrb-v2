@@ -269,7 +269,7 @@ export function useDashboard(selectedMonth: string) {
         supabase.from('mouvements')
           .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code)')
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(7),
         // Get all movements with lot info to calculate current lot stocks
         supabase.from('mouvements')
           .select('product_id, type_mouvement, quantite, lot_numero, date_peremption')

@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock } from 'lucide-react';
+import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock, Trash2 } from 'lucide-react';
 import { formatNumber, formatCurrencyCompact, formatDate } from '../lib/utils';
 import { useDashboard } from '../lib/hooks';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { useQueryClient } from '@tanstack/react-query';
+import ConfirmModal from './ConfirmModal';
 
 interface DashboardStats {
   totalProducts: number;
@@ -48,7 +52,11 @@ interface RecentMovement {
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const { data, isLoading, error } = useDashboard(selectedMonth);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const stats = useMemo(() => {
     if (!data) {
@@ -209,6 +217,37 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     if (!data) return [];
     return data.recentMovements;
   }, [data]);
+
+  async function handleClearRecentActivity() {
+    try {
+      if (!data?.recentMovements || data.recentMovements.length === 0) {
+        showToast('info', 'Aucune activité récente à effacer');
+        return;
+      }
+
+      // Delete recent movements
+      const movementIds = data.recentMovements.map((m: any) => m.id);
+      
+      const { error } = await supabase
+        .from('mouvements')
+        .delete()
+        .in('id', movementIds);
+
+      if (error) throw error;
+
+      showToast('success', `${movementIds.length} mouvements récents supprimés`);
+      
+      // Refresh dashboard data
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await queryClient.invalidateQueries({ queryKey: ['movements'] });
+      
+      setConfirmClear(false);
+    } catch (error: any) {
+      showToast('error', `Erreur lors de la suppression: ${error.message}`);
+      setConfirmClear(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -402,11 +441,23 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Activity - Left Side */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4">
-            <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+              </div>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
+            {user?.role === 'ADMIN' && recentMovements.length > 0 && (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Effacer l'activité récente"
+              >
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Effacer</span>
+              </button>
+            )}
           </div>
 
           {recentMovements.length === 0 ? (
@@ -501,6 +552,14 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={handleClearRecentActivity}
+        title="Effacer l'activité récente"
+        message={`Êtes-vous sûr de vouloir supprimer les ${recentMovements.length} derniers mouvements affichés dans l'activité récente ? Cette action est irréversible.`}
+      />
     </div>
   );
 }
