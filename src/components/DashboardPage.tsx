@@ -351,7 +351,11 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
             </div>
           )}
         </div>
+      </div>
 
+      {/* Alerts and Recent Activity - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Alerts - Left Side */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-4">
             <div className="bg-orange-100 p-2 rounded-lg flex-shrink-0">
@@ -402,11 +406,8 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Recent Activity and Alerts - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Recent Activity - Left Side */}
+        {/* Recent Activity - Right Side */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-4">
             <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
