@@ -404,88 +404,92 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-4">
-          <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+      {/* Recent Activity and Alerts - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Recent Activity - Left Side */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4">
+            <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
           </div>
-          <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
+
+          {recentMovements.length === 0 ? (
+            <div className="text-center py-8 text-slate-500 text-sm">
+              Aucune activité récente
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentMovements.map((movement) => (
+                <div key={movement.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                      {movement.type_mouvement === 'ENTREE' ? (
+                        <TrendingUp className={`w-3 h-3 sm:w-4 sm:h-4 text-green-600`} />
+                      ) : (
+                        <TrendingDown className={`w-3 h-3 sm:w-4 sm:h-4 text-blue-600`} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">
+                        {/* @ts-ignore - Joined table type */}
+                        {movement.product?.nom || 'Produit inconnu'}
+                      </p>
+                      <p className="text-xs text-slate-600 truncate">
+                        {/* @ts-ignore - Joined table type */}
+                        {movement.product?.code || ''} 
+                        {movement.lot_numero && ` • Lot: ${movement.lot_numero}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <p className={`font-bold text-xs sm:text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
+                      {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
+                    </p>
+                    <p className="text-xs text-slate-500 hidden sm:block">{formatDate(movement.date_mouvement)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {recentMovements.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-sm">
-            Aucune activité récente
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {recentMovements.map((movement) => (
-              <div key={movement.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
-                    {movement.type_mouvement === 'ENTREE' ? (
-                      <TrendingUp className={`w-3 h-3 sm:w-4 sm:h-4 text-green-600`} />
-                    ) : (
-                      <TrendingDown className={`w-3 h-3 sm:w-4 sm:h-4 text-blue-600`} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">
-                      {/* @ts-ignore - Joined table type */}
-                      {movement.product?.nom || 'Produit inconnu'}
-                    </p>
-                    <p className="text-xs text-slate-600 truncate">
-                      {/* @ts-ignore - Joined table type */}
-                      {movement.product?.code || ''} 
-                      {movement.lot_numero && ` • Lot: ${movement.lot_numero}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right ml-2 flex-shrink-0">
-                  <p className={`font-bold text-xs sm:text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
-                    {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
-                  </p>
-                  <p className="text-xs text-slate-500 hidden sm:block">{formatDate(movement.date_mouvement)}</p>
-                </div>
+        {/* Alerts - Right Side */}
+        {lowStockProducts.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+              <div className="bg-red-100 p-2 rounded-lg flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
               </div>
-            ))}
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Produits en Alerte</h3>
+            </div>
+
+            <div className="space-y-2">
+              {lowStockProducts.slice(0, 10).map((product) => (
+                <div key={product.id} className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">{product.nom}</p>
+                      <p className="text-xs text-slate-600 mt-1 truncate">{product.code}</p>
+                    </div>
+                    <div className="text-right ml-2 flex-shrink-0">
+                      <p className="text-base sm:text-lg font-bold text-red-600">{formatNumber(product.stock_actuel)}</p>
+                      <p className="text-xs text-slate-600">/ {formatNumber(product.seuil_alerte)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {lowStockProducts.length > 10 && (
+              <p className="text-xs sm:text-sm text-slate-600 mt-3 text-center">
+                +{lowStockProducts.length - 10} autre(s) produit(s) en alerte
+              </p>
+            )}
           </div>
         )}
       </div>
-
-      {lowStockProducts.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4">
-            <div className="bg-red-100 p-2 rounded-lg flex-shrink-0">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Produits en Alerte</h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-            {lowStockProducts.slice(0, 6).map((product) => (
-              <div key={product.id} className="p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">{product.nom}</p>
-                    <p className="text-xs text-slate-600 mt-1 truncate">{product.code}</p>
-                  </div>
-                  <div className="text-right ml-2 flex-shrink-0">
-                    <p className="text-base sm:text-lg font-bold text-red-600">{formatNumber(product.stock_actuel)}</p>
-                    <p className="text-xs text-slate-600">/ {formatNumber(product.seuil_alerte)}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {lowStockProducts.length > 6 && (
-            <p className="text-xs sm:text-sm text-slate-600 mt-3 text-center">
-              +{lowStockProducts.length - 6} autre(s) produit(s) en alerte
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
