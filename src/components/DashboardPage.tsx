@@ -218,6 +218,116 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     return data.recentMovements;
   }, [data]);
 
+  // Calculate products for each alert type
+  const alertProducts = useMemo(() => {
+    if (!data) return {
+      expired: [],
+      expiring7Days: [],
+      expiring30Days: [],
+      lowStock: [],
+      outOfStock: [],
+    };
+
+    const now = new Date().getTime();
+    const expired: any[] = [];
+    const expiring7Days: any[] = [];
+    const expiring30Days: any[] = [];
+    const lowStock: any[] = [];
+    const outOfStock: any[] = [];
+
+    // Calculate lot stocks from movements
+    const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
+    
+    // @ts-ignore - Supabase type inference
+    data.allMovementsWithLots?.forEach(movement => {
+      // @ts-ignore - Supabase type inference
+      const key = `${movement.product_id}_${movement.lot_numero}`;
+      
+      if (!lotStocks.has(key)) {
+        lotStocks.set(key, {
+          stock: 0,
+          // @ts-ignore - Supabase type inference
+          date_peremption: movement.date_peremption || null,
+          // @ts-ignore - Supabase type inference
+          product_id: movement.product_id,
+        });
+      }
+      
+      const lot = lotStocks.get(key)!;
+      // @ts-ignore - Supabase type inference
+      if (movement.type_mouvement === 'ENTREE') {
+        // @ts-ignore - Supabase type inference
+        lot.stock += movement.quantite;
+        // @ts-ignore - Supabase type inference
+        if (movement.date_peremption) {
+          // @ts-ignore - Supabase type inference
+          lot.date_peremption = movement.date_peremption;
+        }
+      } else {
+        // @ts-ignore - Supabase type inference
+        lot.stock -= movement.quantite;
+      }
+    });
+
+    // Group lots by product and check expiry
+    const productExpiryMap = new Map<string, { product: any; earliestExpiry: number; category: string }>();
+
+    lotStocks.forEach(lot => {
+      if (lot.stock > 0 && lot.date_peremption) {
+        const expiryDate = new Date(lot.date_peremption).getTime();
+        const days = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        
+        let category = '';
+        if (days < 0) category = 'expired';
+        else if (days <= 7) category = 'expiring7Days';
+        else if (days > 7 && days <= 30) category = 'expiring30Days';
+
+        if (category) {
+          const existing = productExpiryMap.get(lot.product_id);
+          if (!existing || expiryDate < existing.earliestExpiry) {
+            // @ts-ignore
+            const product = data.products.find(p => p.id === lot.product_id);
+            if (product) {
+              productExpiryMap.set(lot.product_id, {
+                product,
+                earliestExpiry: expiryDate,
+                category,
+              });
+            }
+          }
+        }
+      }
+    });
+
+    // Distribute products to alert categories
+    productExpiryMap.forEach(({ product, category }) => {
+      if (category === 'expired') expired.push(product);
+      else if (category === 'expiring7Days') expiring7Days.push(product);
+      else if (category === 'expiring30Days') expiring30Days.push(product);
+    });
+
+    // Stock alerts
+    // @ts-ignore
+    const activeProducts = data.products.filter(p => p.actif);
+    // @ts-ignore
+    activeProducts.forEach(product => {
+      const stockActuel = product.stock_actuel || 0;
+      if (stockActuel === 0) {
+        outOfStock.push(product);
+      } else if (stockActuel > 0 && stockActuel <= (product.seuil_alerte || 0)) {
+        lowStock.push(product);
+      }
+    });
+
+    return {
+      expired,
+      expiring7Days,
+      expiring30Days,
+      lowStock,
+      outOfStock,
+    };
+  }, [data]);
+
   async function handleClearRecentActivity() {
     try {
       if (!data?.recentMovements || data.recentMovements.length === 0) {
@@ -520,6 +630,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-medium text-red-800 truncate">Produits expirés</p>
                 <p className="text-xs text-red-600 mt-1">Action immédiate</p>
+                {alertProducts.expired.length > 0 && (
+                  <p className="text-xs text-red-700 mt-1.5 line-clamp-2">
+                    {alertProducts.expired.slice(0, 3).map((p: any) => p.nom).join(', ')}
+                    {alertProducts.expired.length > 3 && '...'}
+                  </p>
+                )}
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-red-600 ml-2 flex-shrink-0">{stats.expired}</p>
             </div>
@@ -528,6 +644,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-medium text-orange-800 truncate">Expirent dans 7 jours</p>
                 <p className="text-xs text-orange-600 mt-1">Urgent</p>
+                {alertProducts.expiring7Days.length > 0 && (
+                  <p className="text-xs text-orange-700 mt-1.5 line-clamp-2">
+                    {alertProducts.expiring7Days.slice(0, 3).map((p: any) => p.nom).join(', ')}
+                    {alertProducts.expiring7Days.length > 3 && '...'}
+                  </p>
+                )}
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-orange-600 ml-2 flex-shrink-0">{stats.expiringSoon7Days}</p>
             </div>
@@ -536,6 +658,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-medium text-yellow-800 truncate">Expirent dans 30 jours</p>
                 <p className="text-xs text-yellow-600 mt-1">Surveillance</p>
+                {alertProducts.expiring30Days.length > 0 && (
+                  <p className="text-xs text-yellow-700 mt-1.5 line-clamp-2">
+                    {alertProducts.expiring30Days.slice(0, 3).map((p: any) => p.nom).join(', ')}
+                    {alertProducts.expiring30Days.length > 3 && '...'}
+                  </p>
+                )}
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-yellow-600 ml-2 flex-shrink-0">{stats.expiringSoon}</p>
             </div>
@@ -544,6 +672,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-medium text-amber-800 truncate">Stocks faibles</p>
                 <p className="text-xs text-amber-600 mt-1">Sous seuil</p>
+                {alertProducts.lowStock.length > 0 && (
+                  <p className="text-xs text-amber-700 mt-1.5 line-clamp-2">
+                    {alertProducts.lowStock.slice(0, 3).map((p: any) => p.nom).join(', ')}
+                    {alertProducts.lowStock.length > 3 && '...'}
+                  </p>
+                )}
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-amber-600 ml-2 flex-shrink-0">{stats.lowStockProducts}</p>
             </div>
@@ -552,6 +686,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-medium text-slate-800 truncate">Ruptures de stock</p>
                 <p className="text-xs text-slate-600 mt-1">Stock à zéro</p>
+                {alertProducts.outOfStock.length > 0 && (
+                  <p className="text-xs text-slate-700 mt-1.5 line-clamp-2">
+                    {alertProducts.outOfStock.slice(0, 3).map((p: any) => p.nom).join(', ')}
+                    {alertProducts.outOfStock.length > 3 && '...'}
+                  </p>
+                )}
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-slate-600 ml-2 flex-shrink-0">{stats.outOfStockProducts}</p>
             </div>
