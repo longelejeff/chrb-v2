@@ -228,7 +228,9 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
         <p className="text-sm text-slate-600 mt-1">Vue d'ensemble de la gestion de stock</p>
       </div>
 
+      {/* Vue 360° - Indicateurs principaux */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Valeur totale du stock */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <DollarSign className="w-8 h-8 opacity-80" />
@@ -239,12 +241,15 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           <p className="text-xs opacity-80 mt-1">{stats.activeProducts} produits actifs</p>
         </div>
 
+        {/* Approvisionnements (Entrées) */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Entrées du mois</p>
+              <p className="text-sm text-slate-600 font-medium">Approvisionnements</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrencyCompact(stats.entriesValueMonth)}</p>
-              <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.entriesQtyMonth)} unités</p>
+              <p className="text-xs text-slate-500 mt-1">
+                <span className="font-semibold">{formatNumber(stats.entriesQtyMonth)}</span> unités reçues
+              </p>
             </div>
             <div className="bg-green-100 p-3 rounded-lg">
               <TrendingUp className="w-6 h-6 text-green-600" />
@@ -252,24 +257,28 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
         </div>
 
+        {/* Sorties (Ventes/Consommations) - Indicateur positif d'activité */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Sorties du mois</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{formatCurrencyCompact(stats.exitsValueMonth)}</p>
-              <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.exitsQtyMonth)} unités</p>
+              <p className="text-sm text-slate-600 font-medium">Ventes & Consommations</p>
+              <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrencyCompact(stats.exitsValueMonth)}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                <span className="font-semibold">{formatNumber(stats.exitsQtyMonth)}</span> unités distribuées
+              </p>
             </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <TrendingDown className="w-6 h-6 text-red-600" />
+            <div className="bg-blue-100 p-3 rounded-lg">
+              <TrendingDown className="w-6 h-6 text-blue-600" />
             </div>
           </div>
         </div>
 
+        {/* Flux net (Balance) */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Flux net</p>
-              <p className={`text-2xl font-bold mt-1 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className="text-sm text-slate-600 font-medium">Flux net du mois</p>
+              <p className={`text-2xl font-bold mt-1 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
                 {stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? '+' : ''}
                 {formatCurrencyCompact(stats.entriesValueMonth - stats.exitsValueMonth)}
               </p>
@@ -278,14 +287,78 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
                 {formatNumber(stats.entriesQtyMonth - stats.exitsQtyMonth)} unités
               </p>
             </div>
-            <div className={`p-3 rounded-lg ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-              <DollarSign className={`w-6 h-6 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`p-3 rounded-lg ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'bg-green-100' : 'bg-orange-100'}`}>
+              <DollarSign className={`w-6 h-6 ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`} />
             </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Graphique d'activité du mois */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-indigo-100 p-2 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800">Activité du Mois</h3>
+          </div>
+
+          <div className="space-y-4">
+            {/* Barre d'approvisionnement */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-700">Approvisionnements</span>
+                <span className="text-sm font-bold text-green-600">{formatCurrency(stats.entriesValueMonth)}</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500"
+                  style={{ 
+                    width: `${Math.min(100, stats.totalStockValue > 0 ? (stats.entriesValueMonth / stats.totalStockValue) * 100 : 0)}%` 
+                  }}
+                ></div>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.entriesQtyMonth)} unités reçues</p>
+            </div>
+
+            {/* Barre de ventes */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-700">Ventes & Consommations</span>
+                <span className="text-sm font-bold text-blue-600">{formatCurrency(stats.exitsValueMonth)}</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                  style={{ 
+                    width: `${Math.min(100, stats.totalStockValue > 0 ? (stats.exitsValueMonth / stats.totalStockValue) * 100 : 0)}%` 
+                  }}
+                ></div>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.exitsQtyMonth)} unités distribuées</p>
+            </div>
+
+            {/* Comparaison */}
+            <div className="pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700">Taux d'activité</span>
+                <span className="text-sm font-bold text-indigo-600">
+                  {stats.totalStockValue > 0 
+                    ? ((stats.exitsValueMonth / stats.totalStockValue) * 100).toFixed(1)
+                    : 0}% du stock
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Rotation: {stats.entriesValueMonth > 0 
+                  ? ((stats.exitsValueMonth / stats.entriesValueMonth) * 100).toFixed(0)
+                  : 0}% des entrées
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Top 5 Produits par Valeur */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-blue-100 p-2 rounded-lg">
@@ -390,11 +463,11 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
             {recentMovements.map((movement) => (
               <div key={movement.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  <div className={`p-2 rounded-lg ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
                     {movement.type_mouvement === 'ENTREE' ? (
                       <TrendingUp className={`w-4 h-4 text-green-600`} />
                     ) : (
-                      <TrendingDown className={`w-4 h-4 text-red-600`} />
+                      <TrendingDown className={`w-4 h-4 text-blue-600`} />
                     )}
                   </div>
                   <div className="flex-1">
@@ -411,7 +484,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-bold text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`font-bold text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
                       {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
                     </p>
                     <p className="text-xs text-slate-500">{formatDate(movement.date_mouvement)}</p>
@@ -458,32 +531,41 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       )}
 
       <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Résumé du mois</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <Package className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-slate-800">Vue d'ensemble - {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h3>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-slate-600 mb-1">Valeur du stock</p>
+          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Stock Actuel</p>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalStockValue)}</p>
+            <p className="text-xs text-slate-500 mt-1">{stats.activeProducts} produits</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-slate-600 mb-1">Entrées (valeur)</p>
+          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-green-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Approvisionnements</p>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.entriesValueMonth)}</p>
             <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.entriesQtyMonth)} unités</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-slate-600 mb-1">Sorties (valeur)</p>
-            <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.exitsValueMonth)}</p>
+          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-blue-600">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Ventes</p>
+            <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.exitsValueMonth)}</p>
             <p className="text-xs text-slate-500 mt-1">{formatNumber(stats.exitsQtyMonth)} unités</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-slate-600 mb-1">Flux net</p>
-            <p className={`text-2xl font-bold ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-indigo-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Balance</p>
+            <p className={`text-2xl font-bold ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
               {stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? '+' : ''}
               {formatCurrencyCompact(stats.entriesValueMonth - stats.exitsValueMonth)}
             </p>
+            <p className="text-xs text-slate-500 mt-1">
+              {stats.entriesQtyMonth - stats.exitsQtyMonth >= 0 ? '+' : ''}
+              {formatNumber(stats.entriesQtyMonth - stats.exitsQtyMonth)} unités
+            </p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-slate-600 mb-1">Alertes totales</p>
+          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-orange-500">
+            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold">Alertes</p>
             <p className="text-2xl font-bold text-orange-600">{stats.expired + stats.expiringSoon7Days + stats.expiringSoon + stats.lowStockProducts + stats.outOfStockProducts}</p>
+            <p className="text-xs text-slate-500 mt-1">À surveiller</p>
           </div>
         </div>
       </div>
