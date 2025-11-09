@@ -387,13 +387,13 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
       showToast('success', 'Mouvement supprimé avec succès.');
       
-      // Invalidate all related caches to trigger automatic refresh
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      await queryClient.invalidateQueries({ queryKey: ['products'] });
-      await queryClient.invalidateQueries({ queryKey: ['movements'] });
+      // Invalidate all related caches and force refetch
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['movements'], refetchType: 'active' });
+      await queryClient.refetchQueries({ queryKey: ['movements'] });
       
       setConfirmDelete({ show: false, id: '' });
-      refetch();
       loadProducts();
     } catch (error: any) {
       showToast('error', `Erreur lors de la suppression: ${error.message}`);
