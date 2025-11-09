@@ -486,48 +486,6 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           )}
         </div>
       )}
-
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200 p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
-          <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-slate-800 truncate">
-            Vue d'ensemble - {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-          </h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-blue-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Stock Actuel</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 break-words">{formatCurrencyCompact(stats.totalStockValue)}</p>
-            <p className="text-xs text-slate-500 mt-1">{stats.activeProducts} produits</p>
-          </div>
-          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-green-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Approvision.</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 break-words">{formatCurrencyCompact(stats.entriesValueMonth)}</p>
-            <p className="text-xs text-slate-500 mt-1 truncate">{formatNumber(stats.entriesQtyMonth)} u.</p>
-          </div>
-          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-blue-600">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Ventes</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 break-words">{formatCurrencyCompact(stats.exitsValueMonth)}</p>
-            <p className="text-xs text-slate-500 mt-1 truncate">{formatNumber(stats.exitsQtyMonth)} u.</p>
-          </div>
-          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-indigo-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Balance</p>
-            <p className={`text-lg sm:text-xl lg:text-2xl font-bold break-words ${stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-              {stats.entriesValueMonth - stats.exitsValueMonth >= 0 ? '+' : ''}
-              {formatCurrencyCompact(stats.entriesValueMonth - stats.exitsValueMonth)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1 truncate">
-              {stats.entriesQtyMonth - stats.exitsQtyMonth >= 0 ? '+' : ''}
-              {formatNumber(stats.entriesQtyMonth - stats.exitsQtyMonth)} u.
-            </p>
-          </div>
-          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border-l-4 border-orange-500">
-            <p className="text-xs text-slate-600 mb-1 uppercase font-semibold truncate">Alertes</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">{stats.expired + stats.expiringSoon7Days + stats.expiringSoon + stats.lowStockProducts + stats.outOfStockProducts}</p>
-            <p className="text-xs text-slate-500 mt-1">À surveiller</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
