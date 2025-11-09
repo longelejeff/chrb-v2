@@ -109,12 +109,11 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       const currentStock = product.stock_actuel || 0;
       let newStock = currentStock;
 
-      if (formData.type_mouvement === 'ENTREE' || formData.type_mouvement === 'OUVERTURE') {
+      // Simple calculation: ENTREE adds, SORTIE subtracts
+      if (formData.type_mouvement === 'ENTREE') {
         newStock = currentStock + formData.quantite;
-      } else if (formData.type_mouvement === 'SORTIE' || formData.type_mouvement === 'MISE_AU_REBUT') {
+      } else if (formData.type_mouvement === 'SORTIE') {
         newStock = currentStock - formData.quantite;
-      } else if (formData.type_mouvement === 'AJUSTEMENT') {
-        newStock = currentStock + formData.quantite;
       }
 
       const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
@@ -195,13 +194,11 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       const currentStock = product.stock_actuel || 0;
       let newStock = currentStock;
 
-      // Reverse the movement operation
-      if (movement.type_mouvement === 'ENTREE' || movement.type_mouvement === 'OUVERTURE') {
+      // Reverse the movement operation: ENTREE adds (so subtract), SORTIE subtracts (so add back)
+      if (movement.type_mouvement === 'ENTREE') {
         newStock = currentStock - movement.quantite;
-      } else if (movement.type_mouvement === 'SORTIE' || movement.type_mouvement === 'MISE_AU_REBUT') {
+      } else if (movement.type_mouvement === 'SORTIE') {
         newStock = currentStock + movement.quantite;
-      } else if (movement.type_mouvement === 'AJUSTEMENT') {
-        newStock = currentStock - movement.quantite;
       }
 
       // Prevent negative stock
@@ -268,14 +265,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       setPrintMode(null);
     }, 100);
   }
-
-  const typeColors: Record<Movement['type_mouvement'], string> = {
-    ENTREE: 'bg-green-100 text-green-700',
-    SORTIE: 'bg-red-100 text-red-700',
-    AJUSTEMENT: 'bg-blue-100 text-blue-700',
-    OUVERTURE: 'bg-slate-100 text-slate-700',
-    MISE_AU_REBUT: 'bg-orange-100 text-orange-700',
-  };
 
   function handlePageChange(newPage: number) {
     setPage(newPage);
@@ -379,10 +368,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   onChange={(e) => setFormData({ ...formData, type_mouvement: e.target.value as Movement['type_mouvement'] })}
                   className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
-                  <option value="ENTREE">Entrée</option>
-                  <option value="SORTIE">Sortie</option>
-                  <option value="AJUSTEMENT">Ajustement</option>
-                  <option value="MISE_AU_REBUT">Mise au rebut</option>
+                  <option value="ENTREE">Entrée (Stock In)</option>
+                  <option value="SORTIE">Sortie (Stock Out)</option>
                 </select>
               </div>
 
@@ -520,9 +507,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             <option value="ALL">Tous les types</option>
             <option value="ENTREE">Entrées</option>
             <option value="SORTIE">Sorties</option>
-            <option value="AJUSTEMENT">Ajustements</option>
-            <option value="OUVERTURE">Ouvertures</option>
-            <option value="MISE_AU_REBUT">Mises au rebut</option>
           </select>
         </div>
 
@@ -575,8 +559,12 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                     <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
                       <td className="py-3 px-3 sm:px-4">
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${typeColors[movement.type_mouvement]}`}>
-                          {movement.type_mouvement === 'ENTREE' ? 'ENT' : movement.type_mouvement === 'SORTIE' ? 'SOR' : movement.type_mouvement === 'AJUSTEMENT' ? 'AJU' : movement.type_mouvement === 'OUVERTURE' ? 'OUV' : 'REB'}
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          movement.type_mouvement === 'ENTREE' 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {movement.type_mouvement === 'ENTREE' ? 'ENT' : 'SOR'}
                         </span>
                       </td>
                       <td className="py-3 px-3 sm:px-4">
@@ -586,7 +574,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                         )}
                       </td>
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
-                        {movement.type_mouvement === 'SORTIE' || movement.type_mouvement === 'MISE_AU_REBUT' ? '-' : ''}
+                        {movement.type_mouvement === 'SORTIE' ? '-' : ''}
                         {formatNumber(movement.quantite)}
                       </td>
                       <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-700">
