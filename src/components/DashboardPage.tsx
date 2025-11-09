@@ -215,11 +215,8 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
 
   const recentMovements = useMemo(() => {
     if (!data) return [];
-    console.log('User role:', user?.role);
-    console.log('Recent movements count:', data.recentMovements?.length);
-    console.log('Recent movements:', data.recentMovements);
     return data.recentMovements;
-  }, [data, user]);
+  }, [data]);
 
   async function handleClearRecentActivity() {
     try {
@@ -451,22 +448,24 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
             </div>
-            {user && user.role === 'ADMIN' && (
-              <button
-                onClick={() => {
-                  if (recentMovements && recentMovements.length > 0) {
-                    setConfirmClear(true);
-                  } else {
-                    showToast('info', 'Aucune activité récente à effacer');
-                  }
-                }}
-                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
-                title="Effacer l'activité récente"
-              >
-                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Effacer</span>
-              </button>
-            )}
+            <button
+              onClick={() => {
+                if (!user || user.role !== 'ADMIN') {
+                  showToast('error', 'Accès réservé aux administrateurs');
+                  return;
+                }
+                if (recentMovements && recentMovements.length > 0) {
+                  setConfirmClear(true);
+                } else {
+                  showToast('info', 'Aucune activité récente à effacer');
+                }
+              }}
+              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
+              title="Effacer l'activité récente"
+            >
+              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Effacer</span>
+            </button>
           </div>
 
           {recentMovements.length === 0 ? (
