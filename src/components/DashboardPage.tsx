@@ -235,13 +235,13 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
 
       if (error) throw error;
 
-      showToast('success', `${movementIds.length} mouvements récents supprimés`);
-      
-      // Refresh dashboard data
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      // Refresh dashboard data - force refetch
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'], refetchType: 'active' });
+      await queryClient.refetchQueries({ queryKey: ['dashboard'] });
       await queryClient.invalidateQueries({ queryKey: ['products'] });
       await queryClient.invalidateQueries({ queryKey: ['movements'] });
       
+      showToast('success', `${movementIds.length} mouvements récents supprimés`);
       setConfirmClear(false);
     } catch (error: any) {
       showToast('error', `Erreur lors de la suppression: ${error.message}`);
