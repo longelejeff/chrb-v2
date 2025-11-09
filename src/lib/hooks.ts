@@ -285,10 +285,3 @@ export function useDashboard(selectedMonth: string) {
     refetchOnMount: true,
   });
 }
-        recentMovements: recentMovementsResponse.data || [],
-      };
-    },
-    staleTime: 0, // Always refetch when cache is invalidated
-    refetchOnMount: true,
-  });
-}
