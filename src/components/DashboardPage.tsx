@@ -52,7 +52,7 @@ interface RecentMovement {
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useDashboard(selectedMonth);
@@ -448,7 +448,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
             </div>
-            {user?.role === 'ADMIN' && (
+            {profile?.role === 'ADMIN' && (
               <button
                 onClick={() => {
                   if (recentMovements && recentMovements.length > 0) {
