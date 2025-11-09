@@ -252,3 +252,36 @@ export function useUsers({ page, pageSize, searchTerm = '' }: PaginationParams) 
     },
   });
 }
+
+// Dashboard hook
+export function useDashboard(selectedMonth: string) {
+  return useQuery({
+    queryKey: ['dashboard', selectedMonth],
+    queryFn: async () => {
+      const [
+        productsResponse,
+        movementsResponse,
+        recentMovementsResponse,
+      ] = await Promise.all([
+        supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, valeur_stock').order('valeur_stock', { ascending: false }),
+        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale, date_peremption').eq('mois', selectedMonth),
+        supabase.from('mouvements')
+          .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code), user:users(email)')
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
+
+      if (productsResponse.error) throw productsResponse.error;
+      if (movementsResponse.error) throw movementsResponse.error;
+      if (recentMovementsResponse.error) throw recentMovementsResponse.error;
+
+      return {
+        products: productsResponse.data || [],
+        movements: movementsResponse.data || [],
+        recentMovements: recentMovementsResponse.data || [],
+      };
+    },
+    staleTime: 0, // Always refetch when cache is invalidated
+    refetchOnMount: true,
+  });
+}

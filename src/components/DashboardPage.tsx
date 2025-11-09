@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock } from 'lucide-react';
 import { formatNumber, formatCurrencyCompact, formatDate } from '../lib/utils';
+import { useDashboard } from '../lib/hooks';
 
 interface DashboardStats {
   totalProducts: number;
@@ -50,167 +51,124 @@ interface RecentMovement {
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProducts: 0,
-    activeProducts: 0,
-    totalStockValue: 0,
-    entriesValueMonth: 0,
-    exitsValueMonth: 0,
-    entriesQtyMonth: 0,
-    exitsQtyMonth: 0,
-    expiringSoon: 0,
-    expiringSoon7Days: 0,
-    expired: 0,
-    lowStockProducts: 0,
-    outOfStockProducts: 0,
-  });
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
-  const [recentMovements, setRecentMovements] = useState<RecentMovement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error } = useDashboard(selectedMonth);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [selectedMonth]);
-
-  async function loadDashboardData() {
-    try {
-      setLoading(true);
-
-      const [
-        productsResponse,
-        movementsResponse,
-        recentMovementsResponse,
-      ] = await Promise.all([
-        supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, valeur_stock').order('valeur_stock', { ascending: false }),
-        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale, date_peremption').eq('mois', selectedMonth),
-        supabase.from('mouvements')
-          .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code), user:users(email)')
-          .order('created_at', { ascending: false })
-          .limit(10),
-      ]);
-
-      if (productsResponse.error) throw productsResponse.error;
-      if (movementsResponse.error) throw movementsResponse.error;
-      if (recentMovementsResponse.error) throw recentMovementsResponse.error;
-
-      // @ts-ignore - Supabase type inference
-      const products = productsResponse.data || [];
-      // @ts-ignore - Supabase type inference
-      const movements = movementsResponse.data || [];
-      // @ts-ignore - Supabase type inference
-      const recentMvts = recentMovementsResponse.data || [];
-
-      // @ts-ignore - Supabase type inference
-      const activeProducts = products.filter(p => p.actif);
-
-      // @ts-ignore - Supabase type inference
-      const totalStockValue = activeProducts.reduce((sum, p) => sum + (p.valeur_stock || 0), 0);
-
-      // @ts-ignore - Supabase type inference
-      const entries = movements.filter(m => m.type_mouvement === 'ENTREE');
-      // @ts-ignore - Supabase type inference
-      const exits = movements.filter(m => m.type_mouvement === 'SORTIE');
-
-      // @ts-ignore - Supabase type inference
-      const entriesValueMonth = entries.reduce((sum, m) => sum + (m.valeur_totale || 0), 0);
-      // @ts-ignore - Supabase type inference
-      const exitsValueMonth = exits.reduce((sum, m) => sum + (m.valeur_totale || 0), 0);
-      // @ts-ignore - Supabase type inference
-      const entriesQtyMonth = entries.reduce((sum, m) => sum + m.quantite, 0);
-      // @ts-ignore - Supabase type inference
-      const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
-
-      let expiringSoon = 0;
-      let expiringSoon7Days = 0;
-      let expired = 0;
-      const now = new Date().getTime();
-
-      // @ts-ignore - Supabase type inference
-      movements.forEach(m => {
-        // @ts-ignore - Supabase type inference
-        if (m.date_peremption) {
-          // @ts-ignore - Supabase type inference
-          const expiryDate = new Date(m.date_peremption).getTime();
-          const days = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-          if (days < 0) expired++;
-          else if (days <= 7) expiringSoon7Days++;
-          else if (days <= 30) expiringSoon++;
-        }
-      });
-
-      const lowStock: LowStockProduct[] = [];
-      const topProds: TopProduct[] = [];
-      let outOfStock = 0;
-
-      // @ts-ignore - Supabase type inference
-      for (const product of activeProducts) {
-        // @ts-ignore - Supabase type inference
-        if ((product.stock_actuel || 0) === 0) {
-          outOfStock++;
-        }
-        
-        // @ts-ignore - Supabase type inference
-        if ((product.stock_actuel || 0) < (product.seuil_alerte || 0) && (product.seuil_alerte || 0) > 0) {
-          // @ts-ignore - Supabase type inference
-          lowStock.push({
-            // @ts-ignore - Supabase type inference
-            id: product.id,
-            // @ts-ignore - Supabase type inference
-            code: product.code,
-            // @ts-ignore - Supabase type inference
-            nom: product.nom,
-            // @ts-ignore - Supabase type inference
-            seuil_alerte: product.seuil_alerte || 0,
-            // @ts-ignore - Supabase type inference
-            stock_actuel: product.stock_actuel || 0,
-          });
-        }
-
-        // @ts-ignore - Supabase type inference
-        if ((product.valeur_stock || 0) > 0) {
-          // @ts-ignore - Supabase type inference
-          topProds.push({
-            // @ts-ignore - Supabase type inference
-            id: product.id,
-            // @ts-ignore - Supabase type inference
-            code: product.code,
-            // @ts-ignore - Supabase type inference
-            nom: product.nom,
-            // @ts-ignore - Supabase type inference
-            valeur_stock: product.valeur_stock || 0,
-            // @ts-ignore - Supabase type inference
-            stock_actuel: product.stock_actuel || 0,
-          });
-        }
-      }
-
-      setStats({
-        totalProducts: products.length,
-        activeProducts: activeProducts.length,
-        totalStockValue,
-        entriesValueMonth,
-        exitsValueMonth,
-        entriesQtyMonth,
-        exitsQtyMonth,
-        expiringSoon,
-        expiringSoon7Days,
-        expired,
-        lowStockProducts: lowStock.length,
-        outOfStockProducts: outOfStock,
-      });
-
-      setTopProducts(topProds.slice(0, 5));
-      setLowStockProducts(lowStock);
-      setRecentMovements(recentMvts);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
+  const stats = useMemo(() => {
+    if (!data) {
+      return {
+        totalProducts: 0,
+        activeProducts: 0,
+        totalStockValue: 0,
+        entriesValueMonth: 0,
+        exitsValueMonth: 0,
+        entriesQtyMonth: 0,
+        exitsQtyMonth: 0,
+        expiringSoon: 0,
+        expiringSoon7Days: 0,
+        expired: 0,
+        lowStockProducts: 0,
+        outOfStockProducts: 0,
+      };
     }
-  }
 
-  if (loading) {
+    const { products, movements } = data;
+
+    // @ts-ignore - Supabase type inference
+    const activeProducts = products.filter(p => p.actif);
+
+    // @ts-ignore - Supabase type inference
+    const totalStockValue = activeProducts.reduce((sum, p) => sum + (p.valeur_stock || 0), 0);
+
+    // @ts-ignore - Supabase type inference
+    const entries = movements.filter(m => m.type_mouvement === 'ENTREE');
+    // @ts-ignore - Supabase type inference
+    const exits = movements.filter(m => m.type_mouvement === 'SORTIE');
+
+    // @ts-ignore - Supabase type inference
+    const entriesValueMonth = entries.reduce((sum, m) => sum + (m.valeur_totale || 0), 0);
+    // @ts-ignore - Supabase type inference
+    const exitsValueMonth = exits.reduce((sum, m) => sum + (m.valeur_totale || 0), 0);
+    // @ts-ignore - Supabase type inference
+    const entriesQtyMonth = entries.reduce((sum, m) => sum + m.quantite, 0);
+    // @ts-ignore - Supabase type inference
+    const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
+
+    let expiringSoon = 0;
+    let expiringSoon7Days = 0;
+    let expired = 0;
+    const now = new Date().getTime();
+
+    // @ts-ignore - Supabase type inference
+    movements.forEach(m => {
+      // @ts-ignore - Supabase type inference
+      if (m.date_peremption) {
+        // @ts-ignore - Supabase type inference
+        const expiryDate = new Date(m.date_peremption).getTime();
+        const days = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        if (days < 0) expired++;
+        else if (days <= 7) expiringSoon7Days++;
+        else if (days <= 30) expiringSoon++;
+      }
+    });
+
+    let outOfStock = 0;
+
+    // @ts-ignore - Supabase type inference
+    for (const product of activeProducts) {
+      // @ts-ignore - Supabase type inference
+      if ((product.stock_actuel || 0) === 0) {
+        outOfStock++;
+      }
+    }
+
+    return {
+      totalProducts: products.length,
+      activeProducts: activeProducts.length,
+      totalStockValue,
+      entriesValueMonth,
+      exitsValueMonth,
+      entriesQtyMonth,
+      exitsQtyMonth,
+      expiringSoon,
+      expiringSoon7Days,
+      expired,
+      lowStockProducts: 0, // Will calculate below
+      outOfStockProducts: outOfStock,
+    };
+  }, [data]);
+
+  const topProducts = useMemo(() => {
+    if (!data) return [];
+    
+    // @ts-ignore - Supabase type inference
+    const activeProducts = data.products.filter(p => p.actif);
+    return activeProducts.slice(0, 5);
+  }, [data]);
+
+  const lowStockProducts = useMemo(() => {
+    if (!data) return [];
+    
+    // @ts-ignore - Supabase type inference
+    const activeProducts = data.products.filter(p => p.actif);
+    const lowStock: LowStockProduct[] = [];
+
+    // @ts-ignore - Supabase type inference
+    for (const product of activeProducts) {
+      // @ts-ignore - Supabase type inference
+      if ((product.stock_actuel || 0) > 0 && (product.stock_actuel || 0) <= product.seuil_alerte) {
+        lowStock.push(product);
+      }
+    }
+
+    return lowStock.slice(0, 5);
+  }, [data]);
+
+  const recentMovements = useMemo(() => {
+    if (!data) return [];
+    return data.recentMovements;
+  }, [data]);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -219,6 +177,10 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       </div>
     );
+  }
+
+  if (error) {
+    return <div className="text-center py-8 text-red-600">Erreur de chargement des données</div>;
   }
 
   return (

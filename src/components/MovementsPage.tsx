@@ -7,6 +7,7 @@ import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth } fr
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
 import { useMovements, useAllMovements } from '../lib/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Database } from '../lib/database.types';
 
 type Movement = Database['public']['Tables']['mouvements']['Row'];
@@ -15,6 +16,7 @@ type Product = Database['public']['Tables']['products']['Row'];
 export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -284,6 +286,11 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
       showToast('success', `Mouvement enregistré avec succès — stock restant: ${newStock} unités.`);
 
+      // Invalidate all related caches to trigger automatic refresh
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await queryClient.invalidateQueries({ queryKey: ['movements'] });
+
       setFormData({
         product_id: '',
         type_mouvement: 'ENTREE',
@@ -371,6 +378,12 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       if (updateError) throw updateError;
 
       showToast('success', 'Mouvement supprimé avec succès.');
+      
+      // Invalidate all related caches to trigger automatic refresh
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await queryClient.invalidateQueries({ queryKey: ['movements'] });
+      
       setConfirmDelete({ show: false, id: '' });
       refetch();
       loadProducts();

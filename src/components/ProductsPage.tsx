@@ -6,6 +6,7 @@ import { exportToCSV, formatCurrency } from '../lib/utils';
 import { generateProductCode, normalizeProductCode, generateUniqueCode } from '../lib/codeGenerator';
 import { PaginationControls } from './PaginationControls';
 import { useProducts } from '../lib/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -25,6 +26,7 @@ interface QuickImportPreview {
 
 export function ProductsPage() {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showQuickImport, setShowQuickImport] = useState(false);
@@ -225,6 +227,9 @@ export function ProductsPage() {
         }
       }
 
+      // Invalidate dashboard cache since product changes affect stock value
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      
       setShowModal(false);
       refetch();
     } catch (error: any) {
@@ -240,6 +245,10 @@ export function ProductsPage() {
         .eq('id', product.id);
 
       if (error) throw error;
+      
+      // Invalidate dashboard cache
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      
       refetch();
       showToast('success', `Produit "${product.nom}" ${!product.actif ? 'activé' : 'désactivé'}.`);
     } catch (error: any) {

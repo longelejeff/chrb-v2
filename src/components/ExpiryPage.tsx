@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
 import { Plus, Search, Trash2, AlertTriangle, X, Save } from 'lucide-react';
 import { formatDate, getDaysUntilExpiry, exportToCSV } from '../lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 import ConfirmModal from './ConfirmModal';
 import type { Database } from '../lib/database.types';
 
@@ -15,6 +16,7 @@ interface ExpiryWithProduct extends Expiry {
 
 export function ExpiryPage() {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [expiries, setExpiries] = useState<ExpiryWithProduct[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,6 +86,10 @@ export function ExpiryPage() {
       });
       setShowModal(false);
       loadExpiries();
+      
+      // Invalidate dashboard cache to refresh expiry alerts
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      
       showToast('success', 'Péremption ajoutée avec succès.');
     } catch (error: any) {
       showToast('error', `Erreur: ${error.message}`);
@@ -99,6 +105,10 @@ export function ExpiryPage() {
 
       if (error) throw error;
       loadExpiries();
+      
+      // Invalidate dashboard cache
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      
       showToast('success', 'Péremption supprimée avec succès.');
     } catch (error: any) {
       showToast('error', `Erreur: ${error.message}`);
