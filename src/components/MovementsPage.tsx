@@ -629,6 +629,23 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                 </div>
               )}
 
+              {/* Date de péremption (read-only for SORTIE) */}
+              {formData.type_mouvement === 'SORTIE' && formData.lot_numero && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Date de péremption <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.date_peremption}
+                    readOnly
+                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed text-sm sm:text-base"
+                    title="Date de péremption du lot sélectionné (lecture seule)"
+                  />
+                </div>
+              )}
+
               {/* LOT MANAGEMENT FOR ENTREE - Create new lot */}
               {formData.type_mouvement === 'ENTREE' && (
                 <>
