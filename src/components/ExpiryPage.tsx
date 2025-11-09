@@ -57,6 +57,7 @@ export function ExpiryPage() {
       const { data, error } = await supabase
         .from('peremptions')
         .select('*, product:products(*)')
+        .gt('quantite', 0) // Only show lots with stock > 0
         .order('date_peremption', { ascending: true });
 
       if (error) throw error;
@@ -128,6 +129,9 @@ export function ExpiryPage() {
   }
 
   const filteredExpiries = expiries.filter(e => {
+    // Only show expiries with stock > 0
+    if (e.quantite <= 0) return false;
+    
     const matchesSearch = e.product?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          e.product?.code.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -143,8 +147,10 @@ export function ExpiryPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const expiredCount = expiries.filter(e => getDaysUntilExpiry(e.date_peremption) < 0).length;
+  // Only count expiries with stock > 0
+  const expiredCount = expiries.filter(e => e.quantite > 0 && getDaysUntilExpiry(e.date_peremption) < 0).length;
   const soonCount = expiries.filter(e => {
+    if (e.quantite <= 0) return false;
     const days = getDaysUntilExpiry(e.date_peremption);
     return days >= 0 && days <= 30;
   }).length;

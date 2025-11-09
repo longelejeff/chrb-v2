@@ -284,6 +284,60 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
       if (productError) throw productError;
 
+      // Update lot stock in peremptions table
+      if (formData.type_mouvement === 'SORTIE' && formData.lot_numero) {
+        // Reduce stock from the selected lot
+        const lot = availableLots.find(l => l.lot_numero === formData.lot_numero);
+        if (lot) {
+          const newLotStock = (lot.stock || 0) - formData.quantite;
+          
+          // @ts-ignore - Supabase type inference issue
+          const { error: lotError } = await supabase
+            .from('peremptions')
+            .update({ quantite: newLotStock })
+            .eq('product_id', formData.product_id)
+            .eq('lot_numero', formData.lot_numero);
+
+          if (lotError) throw lotError;
+        }
+      } else if (formData.type_mouvement === 'ENTREE' && formData.lot_numero && formData.date_peremption) {
+        // For ENTREE, create or update lot in peremptions table
+        // Check if lot already exists
+        const { data: existingLot } = await supabase
+          .from('peremptions')
+          .select('*')
+          .eq('product_id', formData.product_id)
+          .eq('lot_numero', formData.lot_numero)
+          .single();
+
+        if (existingLot) {
+          // Update existing lot
+          const newLotStock = (existingLot.quantite || 0) + formData.quantite;
+          
+          // @ts-ignore - Supabase type inference issue
+          const { error: lotError } = await supabase
+            .from('peremptions')
+            .update({ quantite: newLotStock })
+            .eq('id', existingLot.id);
+
+          if (lotError) throw lotError;
+        } else {
+          // Create new lot
+          // @ts-ignore - Supabase type inference issue
+          const { error: lotError } = await supabase
+            .from('peremptions')
+            .insert([{
+              product_id: formData.product_id,
+              lot_numero: formData.lot_numero,
+              date_peremption: formData.date_peremption,
+              quantite: formData.quantite,
+              emplacement: formData.note || null,
+            }]);
+
+          if (lotError) throw lotError;
+        }
+      }
+
       showToast('success', `Mouvement enregistré avec succès — stock restant: ${newStock} unités.`);
 
       // Invalidate all related caches to trigger automatic refresh
@@ -376,6 +430,71 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         .eq('id', movement.product_id);
 
       if (updateError) throw updateError;
+
+      // Update lot stock in peremptions table if movement had a lot
+      // @ts-ignore - Movement type
+      if (movement.lot_numero) {
+        // @ts-ignore - Movement type
+        if (movement.type_mouvement === 'SORTIE') {
+          // For SORTIE deletion, restore stock to lot
+          const { data: existingLot } = await supabase
+            .from('peremptions')
+            // @ts-ignore - Movement type
+            .select('*')
+            // @ts-ignore - Movement type
+            .eq('product_id', movement.product_id)
+            // @ts-ignore - Movement type
+            .eq('lot_numero', movement.lot_numero)
+            .single();
+
+          if (existingLot) {
+            // @ts-ignore - Supabase type inference
+            const restoredStock = (existingLot.quantite || 0) + movement.quantite;
+            
+            // @ts-ignore - Supabase type inference issue
+            await supabase
+              .from('peremptions')
+              .update({ quantite: restoredStock })
+              // @ts-ignore - Supabase type inference
+              .eq('id', existingLot.id);
+          }
+        // @ts-ignore - Movement type
+        } else if (movement.type_mouvement === 'ENTREE') {
+          // For ENTREE deletion, reduce stock from lot (or delete if it reaches 0)
+          const { data: existingLot } = await supabase
+            .from('peremptions')
+            // @ts-ignore - Movement type
+            .select('*')
+            // @ts-ignore - Movement type
+            .eq('product_id', movement.product_id)
+            // @ts-ignore - Movement type
+            .eq('lot_numero', movement.lot_numero)
+            .single();
+
+          if (existingLot) {
+            // @ts-ignore - Supabase type inference
+            const reducedStock = (existingLot.quantite || 0) - movement.quantite;
+            
+            if (reducedStock <= 0) {
+              // Delete lot if stock reaches 0
+              // @ts-ignore - Supabase type inference issue
+              await supabase
+                .from('peremptions')
+                .delete()
+                // @ts-ignore - Supabase type inference
+                .eq('id', existingLot.id);
+            } else {
+              // Update lot stock
+              // @ts-ignore - Supabase type inference issue
+              await supabase
+                .from('peremptions')
+                .update({ quantite: reducedStock })
+                // @ts-ignore - Supabase type inference
+                .eq('id', existingLot.id);
+            }
+          }
+        }
+      }
 
       showToast('success', 'Mouvement supprimé avec succès.');
       

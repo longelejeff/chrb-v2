@@ -262,23 +262,29 @@ export function useDashboard(selectedMonth: string) {
         productsResponse,
         movementsResponse,
         recentMovementsResponse,
+        lotsResponse,
       ] = await Promise.all([
         supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, valeur_stock').order('valeur_stock', { ascending: false }),
-        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale, date_peremption').eq('mois', selectedMonth),
+        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale').eq('mois', selectedMonth),
         supabase.from('mouvements')
           .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code)')
           .order('created_at', { ascending: false })
           .limit(10),
+        supabase.from('peremptions')
+          .select('id, product_id, lot_numero, date_peremption, quantite')
+          .gt('quantite', 0), // Only lots with stock > 0
       ]);
 
       if (productsResponse.error) throw productsResponse.error;
       if (movementsResponse.error) throw movementsResponse.error;
       if (recentMovementsResponse.error) throw recentMovementsResponse.error;
+      if (lotsResponse.error) throw lotsResponse.error;
 
       return {
         products: productsResponse.data || [],
         movements: movementsResponse.data || [],
         recentMovements: recentMovementsResponse.data || [],
+        lots: lotsResponse.data || [],
       };
     },
     staleTime: 0, // Always refetch when cache is invalidated

@@ -68,7 +68,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       };
     }
 
-    const { products, movements } = data;
+    const { products, movements, lots } = data;
 
     // @ts-ignore - Supabase type inference
     const activeProducts = products.filter(p => p.actif);
@@ -90,31 +90,42 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     // @ts-ignore - Supabase type inference
     const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
 
+    // Calculate expiration alerts from lots with stock > 0
     let expiringSoon = 0;
     let expiringSoon7Days = 0;
     let expired = 0;
     const now = new Date().getTime();
 
     // @ts-ignore - Supabase type inference
-    movements.forEach(m => {
+    lots.forEach(lot => {
       // @ts-ignore - Supabase type inference
-      if (m.date_peremption) {
+      if (lot.date_peremption && lot.quantite > 0) {
         // @ts-ignore - Supabase type inference
-        const expiryDate = new Date(m.date_peremption).getTime();
+        const expiryDate = new Date(lot.date_peremption).getTime();
         const days = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-        if (days < 0) expired++;
-        else if (days <= 7) expiringSoon7Days++;
-        else if (days <= 30) expiringSoon++;
+        
+        if (days < 0) {
+          expired++;
+        } else if (days <= 7) {
+          expiringSoon7Days++;
+        } else if (days <= 30) {
+          expiringSoon++;
+        }
       }
     });
 
+    // Calculate stock alerts
+    let lowStock = 0;
     let outOfStock = 0;
 
     // @ts-ignore - Supabase type inference
     for (const product of activeProducts) {
-      // @ts-ignore - Supabase type inference
-      if ((product.stock_actuel || 0) === 0) {
+      const stockActuel = product.stock_actuel || 0;
+      
+      if (stockActuel === 0) {
         outOfStock++;
+      } else if (stockActuel > 0 && stockActuel <= (product.seuil_alerte || 0)) {
+        lowStock++;
       }
     }
 
@@ -129,7 +140,7 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       expiringSoon,
       expiringSoon7Days,
       expired,
-      lowStockProducts: 0, // Will calculate below
+      lowStockProducts: lowStock,
       outOfStockProducts: outOfStock,
     };
   }, [data]);
