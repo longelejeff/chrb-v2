@@ -5,6 +5,13 @@ export function getCurrentMonth(): string {
   return `${year}-${month}`;
 }
 
+export function getMonthFromDate(date: string): string {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
 export function formatMonth(month: string): string {
   const [year, m] = month.split('-');
   const monthNames = [

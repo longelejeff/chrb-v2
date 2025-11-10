@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Plus, Search, Upload, Trash2, Printer } from 'lucide-react';
-import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth } from '../lib/utils';
+import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth, getMonthFromDate } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
 import { useMovements, useAllMovements } from '../lib/hooks';
@@ -271,7 +271,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         prix_unitaire: formData.prix_unitaire,
         lot_numero: formData.lot_numero || null,
         date_peremption: formData.date_peremption || null,
-        mois: selectedMonth,
+        mois: getMonthFromDate(formData.date_mouvement), // Calculate from date_mouvement
         created_by: user.id,
         valeur_totale,
         solde_apres: newStock,

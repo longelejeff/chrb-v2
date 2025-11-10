@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
-import { formatMonth, getPreviousMonth, formatDate } from '../lib/utils';
+import { formatMonth, getPreviousMonth, formatDate, getMonthFromDate } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 
 interface Transfer {
@@ -74,12 +74,13 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
       for (const product of products) {
         const stock = await calculateStock(product.id, previousMonth);
         if (stock > 0) {
+          const dateMouvement = `${selectedMonth}-01`;
           movementsToInsert.push({
             product_id: product.id,
             type_mouvement: 'OUVERTURE',
             quantite: stock,
-            date_mouvement: `${selectedMonth}-01`,
-            mois: selectedMonth,
+            date_mouvement: dateMouvement,
+            mois: getMonthFromDate(dateMouvement), // Calculate from date_mouvement
             note: `Transfert automatique depuis ${formatMonth(previousMonth)}`,
             created_by: user.id,
           });
