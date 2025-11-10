@@ -12,6 +12,12 @@ export function getMonthFromDate(date: string): string {
   return `${year}-${month}`;
 }
 
+export function getLastDayOfMonth(month: string): string {
+  const [year, m] = month.split('-');
+  const lastDay = new Date(parseInt(year), parseInt(m), 0).getDate();
+  return `${month}-${String(lastDay).padStart(2, '0')}`;
+}
+
 export function formatMonth(month: string): string {
   const [year, m] = month.split('-');
   const monthNames = [

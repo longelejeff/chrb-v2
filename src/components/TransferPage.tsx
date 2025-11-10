@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
-import { formatMonth, getPreviousMonth, formatDate, getMonthFromDate } from '../lib/utils';
+import { formatMonth, getPreviousMonth, formatDate, getMonthFromDate, getLastDayOfMonth } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 
 interface Transfer {
@@ -119,7 +119,7 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
   async function calculateStock(productId: string, month: string): Promise<number> {
     try {
       // Filter by date_mouvement up to the end of the specified month
-      const endDate = `${month}-31`;
+      const endDate = getLastDayOfMonth(month);
 
       const { data, error } = await supabase
         .from('mouvements')

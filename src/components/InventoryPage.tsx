@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Save, Lock, Search, Upload } from 'lucide-react';
-import { formatNumber, exportToCSV, formatDate } from '../lib/utils';
+import { formatNumber, exportToCSV, formatDate, getLastDayOfMonth } from '../lib/utils';
 import { PaginationControls } from './PaginationControls';
 import { useInventoryLines } from '../lib/hooks';
 import ConfirmModal from './ConfirmModal';
@@ -125,7 +125,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   async function calculateTheoreticalStock(productId: string, month: string): Promise<number> {
     try {
       // Filter by date_mouvement up to the end of the specified month
-      const endDate = `${month}-31`;
+      const endDate = getLastDayOfMonth(month);
 
       const { data, error } = await supabase
         .from('mouvements')

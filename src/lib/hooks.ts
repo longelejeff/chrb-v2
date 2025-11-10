@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from './supabase';
+import { getLastDayOfMonth } from './utils';
 
 export interface PaginationParams {
   page: number;
@@ -60,7 +61,7 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
 
       // Calculate month range for filtering by date_mouvement
       const startDate = `${month}-01`;
-      const endDate = `${month}-31`; // Covers all months
+      const endDate = getLastDayOfMonth(month);
 
       let query = supabase
         .from('mouvements')
@@ -109,7 +110,7 @@ export function useAllMovements({ searchTerm = '', month, typeFilter, productFil
     queryFn: async (): Promise<any[]> => {
       // Calculate month range for filtering by date_mouvement
       const startDate = `${month}-01`;
-      const endDate = `${month}-31`; // Covers all months
+      const endDate = getLastDayOfMonth(month);
 
       let query = supabase
         .from('mouvements')
@@ -186,7 +187,7 @@ export function useInventory({ page, pageSize, searchTerm = '', month }: Paginat
 
       // Calculate month range for filtering by date_mouvement
       const startDate = `${month}-01`;
-      const endDate = `${month}-31`;
+      const endDate = getLastDayOfMonth(month);
 
       let query = supabase
         .from('mouvements')
@@ -290,7 +291,7 @@ export function useDashboard(selectedMonth: string) {
     queryFn: async () => {
       // Calculate month range for filtering by date_mouvement
       const startDate = `${selectedMonth}-01`;
-      const endDate = `${selectedMonth}-31`;
+      const endDate = getLastDayOfMonth(selectedMonth);
 
       const [
         productsResponse,
