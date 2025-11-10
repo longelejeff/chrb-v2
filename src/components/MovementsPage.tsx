@@ -779,16 +779,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             <option value="ENTREE">Entrées</option>
             <option value="SORTIE">Sorties</option>
           </select>
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setProductFilter('');
-              setTypeFilter('ALL');
-            }}
-            className="w-full sm:w-auto px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm sm:text-base font-medium"
-          >
-            Réinitialiser
-          </button>
         </div>
 
         <div className="overflow-x-auto -mx-4 sm:mx-0">
