@@ -58,10 +58,15 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
+      // Calculate month range for filtering by date_mouvement
+      const startDate = `${month}-01`;
+      const endDate = `${month}-31`; // Covers all months
+
       let query = supabase
         .from('mouvements')
         .select('*, product:products(*)', { count: 'exact' })
-        .eq('mois', month)
+        .gte('date_mouvement', startDate)
+        .lte('date_mouvement', endDate)
         .order('date_mouvement', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -101,10 +106,15 @@ export function useAllMovements({ searchTerm = '', month, typeFilter, productFil
     queryKey: ['all-movements', searchTerm, month, typeFilter, productFilter],
     enabled,
     queryFn: async (): Promise<any[]> => {
+      // Calculate month range for filtering by date_mouvement
+      const startDate = `${month}-01`;
+      const endDate = `${month}-31`; // Covers all months
+
       let query = supabase
         .from('mouvements')
         .select('*, product:products(*)')
-        .eq('mois', month)
+        .gte('date_mouvement', startDate)
+        .lte('date_mouvement', endDate)
         .order('date_mouvement', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -172,10 +182,15 @@ export function useInventory({ page, pageSize, searchTerm = '', month }: Paginat
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
+      // Calculate month range for filtering by date_mouvement
+      const startDate = `${month}-01`;
+      const endDate = `${month}-31`;
+
       let query = supabase
         .from('mouvements')
         .select('*, product:products(*)', { count: 'exact' })
-        .eq('mois', month)
+        .gte('date_mouvement', startDate)
+        .lte('date_mouvement', endDate)
         .order('date_mouvement', { ascending: false });
 
       if (searchTerm) {
@@ -270,6 +285,10 @@ export function useDashboard(selectedMonth: string) {
   return useQuery({
     queryKey: ['dashboard', selectedMonth],
     queryFn: async () => {
+      // Calculate month range for filtering by date_mouvement
+      const startDate = `${selectedMonth}-01`;
+      const endDate = `${selectedMonth}-31`;
+
       const [
         productsResponse,
         movementsResponse,
@@ -277,7 +296,7 @@ export function useDashboard(selectedMonth: string) {
         allMovementsWithLotsResponse,
       ] = await Promise.all([
         supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, valeur_stock').order('valeur_stock', { ascending: false }),
-        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale').eq('mois', selectedMonth),
+        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale').gte('date_mouvement', startDate).lte('date_mouvement', endDate),
         supabase.from('mouvements')
           .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code)')
           .order('created_at', { ascending: false })

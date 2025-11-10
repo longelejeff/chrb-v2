@@ -118,11 +118,14 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
 
   async function calculateStock(productId: string, month: string): Promise<number> {
     try {
+      // Filter by date_mouvement up to the end of the specified month
+      const endDate = `${month}-31`;
+
       const { data, error } = await supabase
         .from('mouvements')
         .select('type_mouvement, quantite')
         .eq('product_id', productId)
-        .lte('mois', month);
+        .lte('date_mouvement', endDate);
 
       if (error) throw error;
 
