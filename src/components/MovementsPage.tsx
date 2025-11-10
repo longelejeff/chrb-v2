@@ -190,11 +190,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     
     if (lot) {
       setLotDetails(lot);
+      
+      // Extract date part only (YYYY-MM-DD) to avoid timezone issues
+      const expiryDateOnly = lot.date_peremption ? lot.date_peremption.split('T')[0] : '';
+      
       setFormData(prev => ({
         ...prev,
         lot_numero: lot.lot_numero,
         prix_unitaire: lot.prix_unitaire || 0,
-        date_peremption: lot.date_peremption || '',
+        date_peremption: expiryDateOnly,
       }));
       
       // Validate quantity
@@ -565,7 +569,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   min="0"
                   value={formData.prix_unitaire}
                   onChange={(e) => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  readOnly={formData.type_mouvement === 'SORTIE'}
+                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base disabled:bg-slate-50 disabled:text-slate-500"
                 />
               </div>
 
