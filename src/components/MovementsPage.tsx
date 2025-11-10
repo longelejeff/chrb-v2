@@ -783,15 +783,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <div className="inline-block min-w-full align-middle">
-            <table className="min-w-full">
+            <table className="min-w-full table-auto">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Date</th>
+                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-24 sm:w-28">Date</th>
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Qté</th>
-                  <th className="hidden sm:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Solde</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
+                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Qté</th>
+                  <th className="hidden sm:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700 w-24">Prix Unit.</th>
+                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Solde</th>
+                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Actions</th>
                 </tr>
               </thead>
               <tbody>
