@@ -787,7 +787,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-24 sm:w-28">Date</th>
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
+                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 max-w-xs">Produit</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Qté</th>
                   <th className="hidden sm:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700 w-24">Prix Unit.</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Solde</th>
@@ -799,9 +799,9 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   return (
                     <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
-                      <td className="py-3 px-3 sm:px-4">
+                      <td className="py-3 px-3 sm:px-4 max-w-xs">
                         <div className="flex items-center gap-2">
-                          <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
                             movement.type_mouvement === 'ENTREE' 
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-red-100 text-red-700'
