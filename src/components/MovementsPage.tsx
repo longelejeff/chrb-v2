@@ -787,10 +787,9 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Date</th>
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Type</th>
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Qté</th>
-                  <th className="hidden md:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
+                  <th className="hidden sm:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Solde</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
                 </tr>
@@ -801,35 +800,29 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                     <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
                       <td className="py-3 px-3 sm:px-4">
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                          movement.type_mouvement === 'ENTREE' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {movement.type_mouvement === 'ENTREE' ? 'ENT' : 'SOR'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 sm:px-4">
-                        <div className="text-xs sm:text-sm text-slate-700 font-medium">{movement.product?.nom}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          {/* @ts-ignore */}
-                          {movement.lot_numero && `Lot: ${movement.lot_numero}`}
-                          {/* @ts-ignore */}
-                          {movement.date_peremption && ` • Exp: ${formatDate(movement.date_peremption)}`}
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                            movement.type_mouvement === 'ENTREE' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {movement.type_mouvement === 'ENTREE' ? 'E' : 'S'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs sm:text-sm text-slate-700 font-medium truncate">{movement.product?.nom}</div>
+                            <div className="text-xs text-slate-500 truncate">
+                              {/* @ts-ignore */}
+                              {movement.lot_numero && `Lot: ${movement.lot_numero}`}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
-                        {movement.type_mouvement === 'SORTIE' ? '-' : ''}
+                        {movement.type_mouvement === 'SORTIE' ? '-' : '+'}
                         {formatNumber(movement.quantite)}
                       </td>
-                      <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
-                      <td className="py-3 px-3 sm:px-4 text-right">
-                        <span className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-semibold ${
-                          (movement.solde_apres || 0) >= 0 ? 'text-green-700' : 'text-red-700'
-                        }`}>
-                          {formatNumber(movement.solde_apres)}
-                        </span>
-                      </td>
+                      <td className="hidden sm:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
+                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{formatNumber(movement.solde_apres)}</td>
                       <td className="py-3 px-3 sm:px-4 text-right">
                         <button
                           onClick={() => setConfirmDelete({ show: true, id: movement.id })}
