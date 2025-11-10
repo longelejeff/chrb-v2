@@ -790,42 +790,13 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Type</th>
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Qté</th>
-                  <th className="hidden md:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Numéro de lot</th>
-                  <th className="hidden lg:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Date de péremption</th>
                   <th className="hidden md:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Prix Unit.</th>
-                  <th className="hidden lg:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700">Valeur</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Solde</th>
-                  <th className="hidden xl:table-cell text-left py-3 px-4 text-sm font-semibold text-slate-700">Note</th>
                   <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {displayMovements.map((movement: any) => {
-                  // Calculate expiry status
-                  let expiryClass = '';
-                  let expiryText = '';
-                  // @ts-ignore - New fields added to database
-                  if (movement.date_peremption) {
-                    const today = new Date();
-                    // @ts-ignore
-                    const expiryDate = new Date(movement.date_peremption);
-                    const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysUntilExpiry < 0) {
-                      expiryClass = 'text-red-700 font-semibold';
-                      // @ts-ignore
-                      expiryText = formatDate(movement.date_peremption);
-                    } else if (daysUntilExpiry <= 30) {
-                      expiryClass = 'text-orange-600 font-semibold';
-                      // @ts-ignore
-                      expiryText = formatDate(movement.date_peremption);
-                    } else {
-                      expiryClass = 'text-slate-700';
-                      // @ts-ignore
-                      expiryText = formatDate(movement.date_peremption);
-                    }
-                  }
-
                   return (
                     <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
@@ -840,23 +811,18 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       </td>
                       <td className="py-3 px-3 sm:px-4">
                         <div className="text-xs sm:text-sm text-slate-700 font-medium">{movement.product?.nom}</div>
-                        {movement.note && (
-                          <div className="xl:hidden text-xs text-slate-500 mt-0.5 truncate max-w-[120px]">{movement.note}</div>
-                        )}
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          {/* @ts-ignore */}
+                          {movement.lot_numero && `Lot: ${movement.lot_numero}`}
+                          {/* @ts-ignore */}
+                          {movement.date_peremption && ` • Exp: ${formatDate(movement.date_peremption)}`}
+                        </div>
                       </td>
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
                         {movement.type_mouvement === 'SORTIE' ? '-' : ''}
                         {formatNumber(movement.quantite)}
                       </td>
-                      <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-700">
-                        {/* @ts-ignore */}
-                        {movement.lot_numero || '-'}
-                      </td>
-                      <td className={`hidden lg:table-cell py-3 px-4 text-sm ${expiryClass}`}>
-                        {expiryText || '-'}
-                      </td>
                       <td className="hidden md:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
-                      <td className="hidden lg:table-cell py-3 px-4 text-sm text-slate-700 text-right font-medium">{formatCurrency(movement.valeur_totale)}</td>
                       <td className="py-3 px-3 sm:px-4 text-right">
                         <span className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-semibold ${
                           (movement.solde_apres || 0) >= 0 ? 'text-green-700' : 'text-red-700'
@@ -864,7 +830,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                           {formatNumber(movement.solde_apres)}
                         </span>
                       </td>
-                      <td className="hidden xl:table-cell py-3 px-4 text-sm text-slate-600 truncate max-w-xs">{movement.note}</td>
                       <td className="py-3 px-3 sm:px-4 text-right">
                         <button
                           onClick={() => setConfirmDelete({ show: true, id: movement.id })}
