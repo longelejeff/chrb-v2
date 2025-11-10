@@ -65,6 +65,7 @@ export function useMovements({ page, pageSize, searchTerm = '', month, typeFilte
       let query = supabase
         .from('mouvements')
         .select('*, product:products(*)', { count: 'exact' })
+        .not('date_mouvement', 'is', null)
         .gte('date_mouvement', startDate)
         .lte('date_mouvement', endDate)
         .order('date_mouvement', { ascending: false })
@@ -113,6 +114,7 @@ export function useAllMovements({ searchTerm = '', month, typeFilter, productFil
       let query = supabase
         .from('mouvements')
         .select('*, product:products(*)')
+        .not('date_mouvement', 'is', null)
         .gte('date_mouvement', startDate)
         .lte('date_mouvement', endDate)
         .order('date_mouvement', { ascending: false })
@@ -189,6 +191,7 @@ export function useInventory({ page, pageSize, searchTerm = '', month }: Paginat
       let query = supabase
         .from('mouvements')
         .select('*, product:products(*)', { count: 'exact' })
+        .not('date_mouvement', 'is', null)
         .gte('date_mouvement', startDate)
         .lte('date_mouvement', endDate)
         .order('date_mouvement', { ascending: false });
@@ -296,7 +299,11 @@ export function useDashboard(selectedMonth: string) {
         allMovementsWithLotsResponse,
       ] = await Promise.all([
         supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, valeur_stock').order('valeur_stock', { ascending: false }),
-        supabase.from('mouvements').select('type_mouvement, quantite, valeur_totale').gte('date_mouvement', startDate).lte('date_mouvement', endDate),
+        supabase.from('mouvements')
+          .select('type_mouvement, quantite, valeur_totale')
+          .not('date_mouvement', 'is', null)
+          .gte('date_mouvement', startDate)
+          .lte('date_mouvement', endDate),
         supabase.from('mouvements')
           .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code)')
           .order('created_at', { ascending: false })
