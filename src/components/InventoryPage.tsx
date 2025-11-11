@@ -492,12 +492,12 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+    <div className="space-y-2 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
       <div className="flex flex-col gap-2 sm:gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
           <div className="min-w-0 flex-1 w-full">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <h2 className="text-lg sm:text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
               Statut: {isValidated ? (
                 <span className="text-green-600 font-medium">Validé</span>
               ) : (
@@ -521,21 +521,6 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             </button>
           )}
         </div>
-
-        {/* Mobile: Single save button - Prominent design */}
-        {!isValidated && (
-          <div className="flex justify-center sm:hidden">
-            <button
-              onClick={saveInventory}
-              disabled={saving}
-              className="w-full max-w-xs inline-flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
-              aria-label="Sauvegarder l'inventaire"
-            >
-              <Save className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
-              <span>Sauvegarder</span>
-            </button>
-          </div>
-        )}
 
         {/* Desktop: Secondary actions in row */}
         <div className="hidden sm:flex gap-3">
@@ -638,27 +623,31 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
         </div>
 
-        {/* Mobile Card Layout - Visible only on mobile */}
-        <div className="sm:hidden space-y-3">
+        {/* Mobile Card Layout - Compact et moderne */}
+        <div className="sm:hidden space-y-2">
           {lines.map((line: any) => {
             const stockTheorique = line.product?.stock_actuel || 0;
             const stockPhysique = line.stock_physique || 0;
             const ecart = stockPhysique - stockTheorique;
             
             return (
-              <div key={line.id} className="bg-white border border-slate-200 rounded-lg p-3 space-y-3">
-                <div className="font-medium text-sm text-slate-800">{line.product?.nom}</div>
+              <div key={line.id} className="bg-white rounded-xl shadow-sm border-0 p-3 transition-all duration-200">
+                <div className="font-semibold text-sm text-slate-800 mb-2 truncate">{line.product?.nom}</div>
                 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <div className="text-xs text-slate-500 mb-1">Théorique</div>
-                    <div className="text-sm font-medium text-slate-700">{formatNumber(stockTheorique)}</div>
+                    <div className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-lg px-2 py-1.5 text-center">
+                      {formatNumber(stockTheorique)}
+                    </div>
                   </div>
                   
                   <div>
                     <div className="text-xs text-slate-500 mb-1">Physique</div>
                     {isValidated ? (
-                      <div className="text-sm font-medium text-slate-700">{formatNumber(stockPhysique)}</div>
+                      <div className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-lg px-2 py-1.5 text-center">
+                        {formatNumber(stockPhysique)}
+                      </div>
                     ) : (
                       <input
                         type="number"
@@ -666,24 +655,24 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                         min="0"
                         value={stockPhysique}
                         onChange={(e) => updateLine(line.id, parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-1 text-sm text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 py-1.5 text-sm text-center font-medium bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200"
                       />
                     )}
                   </div>
                   
                   <div>
                     <div className="text-xs text-slate-500 mb-1">Écart</div>
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                    <div
+                      className={`text-sm font-bold rounded-lg px-2 py-1.5 text-center transition-all duration-200 ${
                         ecart === 0
                           ? 'bg-slate-100 text-slate-700'
                           : ecart > 0
-                          ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
                       }`}
                     >
                       {ecart > 0 ? '+' : ''}{formatNumber(ecart)}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -736,6 +725,21 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
           >
             <Lock className="w-4 h-4 flex-shrink-0" />
             Valider
+          </button>
+        </div>
+      )}
+
+      {/* Mobile: Bouton Sauvegarder sticky */}
+      {!isValidated && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 p-3 shadow-lg z-40">
+          <button
+            onClick={saveInventory}
+            disabled={saving}
+            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 hover:shadow-lg transition-all duration-200 disabled:opacity-50 text-sm font-semibold"
+            aria-label="Sauvegarder l'inventaire"
+          >
+            <Save className="w-5 h-5 flex-shrink-0" />
+            <span>Sauvegarder l'inventaire</span>
           </button>
         </div>
       )}

@@ -403,11 +403,11 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+    <div className="space-y-2 sm:space-y-6 px-2 sm:px-0 pb-4 sm:pb-0">
       <div className="flex flex-col gap-2 sm:gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
           <div className="w-full sm:w-auto">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Produits</h2>
+            <h2 className="text-lg sm:text-2xl font-bold text-slate-800">Produits</h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">Gestion du catalogue</p>
           </div>
           {/* Desktop: Primary action button */}
@@ -455,21 +455,22 @@ export function ProductsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
+      <div className="bg-white rounded-xl shadow-sm border-0 p-2 sm:p-4 transition-all duration-200">
+        {/* Barre de recherche compacte */}
+        <div className="relative mb-3 sm:mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Rechercher..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200"
           />
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
-            <table className="min-w-full">
+        {/* Vue Desktop - Table */}
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Nom</th>
@@ -529,9 +530,65 @@ export function ProductsPage() {
                 ))}
               </tbody>
             </table>
+            {products.length === 0 && (
+              <div className="text-center py-8 text-slate-500">Aucun produit trouvé</div>
+            )}
           </div>
+
+        {/* Vue Mobile - Cartes compactes */}
+        <div className="sm:hidden space-y-2">
+          {products.map((product) => (
+            <div 
+              key={product.id} 
+              className="bg-white rounded-xl shadow-sm border border-slate-100 p-3 transition-all duration-200 hover:shadow-md"
+            >
+              {/* En-tête */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-slate-800 text-sm truncate">{product.nom}</h3>
+                  {product.actif ? (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-50 text-green-700 rounded-md text-xs font-medium mt-1">
+                      <Power className="w-3 h-3" /> Actif
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-md text-xs font-medium mt-1">
+                      <PowerOff className="w-3 h-3" /> Inactif
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => toggleActive(product)}
+                    className="p-1.5 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                    title={product.actif ? 'Désactiver' : 'Activer'}
+                  >
+                    {product.actif ? <PowerOff className="w-4 h-4 text-slate-600" /> : <Power className="w-4 h-4 text-green-600" />}
+                  </button>
+                  <button
+                    onClick={() => openModal(product)}
+                    className="p-1.5 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                    title="Modifier"
+                  >
+                    <Edit2 className="w-4 h-4 text-blue-600" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Statistiques */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <div className="text-xs">
+                  <span className="text-slate-500">Stock:</span>
+                  <span className="ml-1 font-semibold text-slate-800">{product.stock_actuel || 0}</span>
+                </div>
+                <div className="text-xs">
+                  <span className="text-slate-500">Valeur:</span>
+                  <span className="ml-1 font-semibold text-slate-800">{formatCurrency(product.valeur_stock)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
           {products.length === 0 && (
-            <div className="text-center py-8 text-slate-500">Aucun produit trouvé</div>
+            <div className="text-center py-8 text-slate-500 text-sm">Aucun produit trouvé</div>
           )}
         </div>
 
@@ -822,17 +879,14 @@ export function ProductsPage() {
         </div>
       )}
 
-      {/* Mobile: Sticky bottom bar for primary action */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-lg z-40">
-        <button
-          onClick={() => openModal()}
-          className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
-          aria-label="Créer un nouveau produit"
-        >
-          <Plus className="w-4 h-4 flex-shrink-0" />
-          Nouveau
-        </button>
-      </div>
+      {/* Mobile: Bouton flottant rond */}
+      <button
+        onClick={() => openModal()}
+        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 z-40 hover:scale-110"
+        aria-label="Créer un nouveau produit"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
     </div>
   );
 }

@@ -650,10 +650,10 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+    <div className="space-y-2 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
       <div className="flex flex-col gap-2 sm:gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+          <h2 className="text-lg sm:text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
           {/* Desktop: Primary action button */}
           <button
             onClick={() => setShowForm(!showForm)}
@@ -665,15 +665,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           </button>
         </div>
 
-        {/* Mobile: Single PDF button - Streamlined design */}
-        <div className="flex justify-center sm:hidden print:hidden">
+        {/* Mobile: Bouton PDF moderne */}
+        <div className="flex justify-center sm:hidden print:hidden mb-1">
           <button
             onClick={handlePrintPDF}
-            className="w-full max-w-[200px] h-10 inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm font-medium"
             aria-label="Télécharger PDF de tous les mouvements"
           >
-            <Download className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
-            <span className="truncate">Tout</span>
+            <Download className="w-4 h-4 flex-shrink-0 stroke-[2]" />
+            <span>Tout (PDF)</span>
           </button>
         </div>
 
@@ -1067,55 +1067,55 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
         </div>
 
-        {/* Mobile Card Layout - Visible only on mobile */}
-        <div className="sm:hidden space-y-3">
+        {/* Mobile Card Layout - Compact et moderne */}
+        <div className="sm:hidden space-y-2">
           {displayMovements.map((movement: any) => (
-            <div key={movement.id} className="bg-white border border-slate-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-start justify-between gap-2">
+            <div key={movement.id} className="bg-white rounded-xl shadow-sm border-0 p-3 transition-all duration-200 hover:shadow-md">
+              <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold flex-shrink-0 transition-all duration-200 ${
                     movement.type_mouvement === 'ENTREE' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-red-100 text-red-700'
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
-                    {movement.type_mouvement === 'ENTREE' ? 'ENTRÉE' : 'SORTIE'}
+                    {movement.type_mouvement === 'ENTREE' ? '↑ ENTRÉE' : '↓ SORTIE'}
                   </span>
-                  <button
-                    onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                    className="p-1.5 hover:bg-slate-100 rounded transition-colors ml-auto flex-shrink-0"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
                 </div>
+                <button
+                  onClick={() => setConfirmDelete({ show: true, id: movement.id })}
+                  className="p-1.5 hover:bg-red-50 rounded-lg transition-all duration-200 flex-shrink-0"
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                </button>
               </div>
               
-              <div>
-                <div className="text-sm font-medium text-slate-800">{movement.product?.nom}</div>
+              <div className="mb-2">
+                <div className="text-sm font-semibold text-slate-800 truncate">{movement.product?.nom}</div>
                 {movement.lot_numero && (
                   <div className="text-xs text-slate-500 mt-0.5">Lot: {movement.lot_numero}</div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-                <div>
-                  <div className="text-xs text-slate-500">Date</div>
-                  <div className="text-sm font-medium text-slate-700">{formatDate(movement.date_mouvement)}</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Date:</span>
+                  <span className="text-xs font-medium text-slate-700">{formatDate(movement.date_mouvement)}</span>
                 </div>
-                <div>
-                  <div className="text-xs text-slate-500">Quantité</div>
-                  <div className="text-sm font-medium text-slate-700">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Qté:</span>
+                  <span className={`text-xs font-semibold ${movement.type_mouvement === 'SORTIE' ? 'text-red-600' : 'text-green-600'}`}>
                     {movement.type_mouvement === 'SORTIE' ? '-' : '+'}
                     {formatNumber(movement.quantite)}
-                  </div>
+                  </span>
                 </div>
-                <div>
-                  <div className="text-xs text-slate-500">Prix Unit.</div>
-                  <div className="text-sm font-medium text-slate-700">{formatCurrency(movement.prix_unitaire)}</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Prix:</span>
+                  <span className="text-xs font-medium text-slate-700">{formatCurrency(movement.prix_unitaire)}</span>
                 </div>
-                <div>
-                  <div className="text-xs text-slate-500">Solde</div>
-                  <div className="text-sm font-medium text-slate-700">{formatNumber(movement.solde_apres)}</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Solde:</span>
+                  <span className="text-xs font-bold text-slate-800">{formatNumber(movement.solde_apres)}</span>
                 </div>
               </div>
             </div>
