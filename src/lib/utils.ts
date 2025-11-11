@@ -27,6 +27,12 @@ export function formatMonth(month: string): string {
   return `${monthNames[parseInt(m) - 1]} ${year}`;
 }
 
+export function getMonthDate(month: string): Date {
+  // Crée une date au milieu du mois pour éviter les problèmes de timezone
+  const [year, m] = month.split('-');
+  return new Date(parseInt(year), parseInt(m) - 1, 15);
+}
+
 export function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('fr-FR');
 }

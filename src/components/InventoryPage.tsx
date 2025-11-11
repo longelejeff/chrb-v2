@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Save, Lock, Search, Upload, Printer } from 'lucide-react';
-import { formatNumber, exportToCSV, formatDate } from '../lib/utils';
+import { formatNumber, exportToCSV, formatDate, getMonthDate } from '../lib/utils';
 import { PaginationControls } from './PaginationControls';
 import { useInventoryLines } from '../lib/hooks';
 import ConfirmModal from './ConfirmModal';
@@ -252,7 +252,9 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   function generatePrintHTML(allLines: any[]): string {
-    const monthYear = new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    // Créer une date UTC pour éviter les problèmes de timezone
+    const date = getMonthDate(selectedMonth);
+    const monthYear = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const printDate = new Date().toLocaleDateString('fr-FR');
     
     // Fonction pour échapper le HTML
