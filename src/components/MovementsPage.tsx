@@ -788,27 +788,28 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
         </div>
 
-        <div className="overflow-x-auto -mx-2 sm:mx-0">
+        {/* Desktop Table - Hidden on mobile */}
+        <div className="hidden sm:block overflow-x-auto -mx-2 sm:mx-0">
           <div className="inline-block min-w-full align-middle px-2 sm:px-0">
             <table className="min-w-full table-auto">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Date</th>
-                  <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700">Produit</th>
-                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Qté</th>
-                  <th className="hidden sm:table-cell text-right py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Prix Unit.</th>
-                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Solde</th>
-                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Actions</th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Date</th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-slate-700">Produit</th>
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Qté</th>
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Prix Unit.</th>
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Solde</th>
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {displayMovements.map((movement: any) => {
                   return (
                     <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
-                      <td className="py-2 px-2 sm:py-3 sm:px-4">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <span className={`inline-block px-1 sm:px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                      <td className="py-3 px-4 text-xs text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
                             movement.type_mouvement === 'ENTREE' 
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-red-100 text-red-700'
@@ -825,16 +826,16 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                           </div>
                         </div>
                       </td>
-                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">
+                      <td className="py-3 px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">
                         {movement.type_mouvement === 'SORTIE' ? '-' : '+'}
                         {formatNumber(movement.quantite)}
                       </td>
-                      <td className="hidden sm:table-cell py-3 px-4 text-xs text-slate-600 text-right whitespace-nowrap">{formatCurrency(movement.prix_unitaire)}</td>
-                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">{formatNumber(movement.solde_apres)}</td>
-                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-right">
+                      <td className="py-3 px-4 text-xs text-slate-600 text-right whitespace-nowrap">{formatCurrency(movement.prix_unitaire)}</td>
+                      <td className="py-3 px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">{formatNumber(movement.solde_apres)}</td>
+                      <td className="py-3 px-4 text-right">
                         <button
                           onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                          className="p-1 sm:p-1.5 hover:bg-slate-100 rounded transition-colors"
+                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
@@ -846,9 +847,66 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
               </tbody>
             </table>
           </div>
-          {movements.length === 0 && (
-            <div className="text-center py-8 text-slate-500 text-sm">Aucun mouvement trouvé</div>
-          )}
+        </div>
+
+        {/* Mobile Card Layout - Visible only on mobile */}
+        <div className="sm:hidden space-y-3">
+          {displayMovements.map((movement: any) => (
+            <div key={movement.id} className="bg-white border border-slate-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
+                    movement.type_mouvement === 'ENTREE' 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {movement.type_mouvement === 'ENTREE' ? 'ENTRÉE' : 'SORTIE'}
+                  </span>
+                  <button
+                    onClick={() => setConfirmDelete({ show: true, id: movement.id })}
+                    className="p-1.5 hover:bg-slate-100 rounded transition-colors ml-auto flex-shrink-0"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <div className="text-sm font-medium text-slate-800">{movement.product?.nom}</div>
+                {movement.lot_numero && (
+                  <div className="text-xs text-slate-500 mt-0.5">Lot: {movement.lot_numero}</div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                <div>
+                  <div className="text-xs text-slate-500">Date</div>
+                  <div className="text-sm font-medium text-slate-700">{formatDate(movement.date_mouvement)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500">Quantité</div>
+                  <div className="text-sm font-medium text-slate-700">
+                    {movement.type_mouvement === 'SORTIE' ? '-' : '+'}
+                    {formatNumber(movement.quantite)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500">Prix Unit.</div>
+                  <div className="text-sm font-medium text-slate-700">{formatCurrency(movement.prix_unitaire)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500">Solde</div>
+                  <div className="text-sm font-medium text-slate-700">{formatNumber(movement.solde_apres)}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {movements.length === 0 && (
+          <div className="text-center py-8 text-slate-500 text-sm">Aucun mouvement trouvé</div>
+        )}
           
           <div className="print:hidden">
             <PaginationControls
