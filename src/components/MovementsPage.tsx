@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Plus, Search, Upload, Trash2, Printer } from 'lucide-react';
-import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth, getMonthFromDate } from '../lib/utils';
+import { Plus, Search, Upload, Trash2, Printer, FileText, Download } from 'lucide-react';
+import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth, getMonthFromDate, getMonthDate } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
 import { useMovements, useAllMovements } from '../lib/hooks';
@@ -427,6 +427,205 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     exportToCSV(exportData, `mouvements_${selectedMonth}`);
   }
 
+  async function handlePrintPDF() {
+    try {
+      // Récupérer TOUS les mouvements du mois (sans pagination)
+      const { data: allMovements, error } = await supabase
+        .from('mouvements')
+        .select('*, product:products!inner(*)')
+        .gte('date_mouvement', `${selectedMonth}-01`)
+        .lte('date_mouvement', `${selectedMonth}-31`)
+        .order('date_mouvement', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
+
+      if (!allMovements || allMovements.length === 0) {
+        showToast('warning', 'Aucun mouvement pour ce mois');
+        return;
+      }
+
+      console.log('Mouvements récupérés:', allMovements.length);
+
+      // Créer le contenu HTML pour l'impression
+      const printContent = generateMovementsPrintHTML(allMovements);
+      
+      // Ouvrir une nouvelle fenêtre et imprimer
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // Attendre que le contenu soit rendu puis imprimer
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      } else {
+        showToast('error', 'Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez les popups bloqués.');
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de l\'impression:', error);
+      showToast('error', `Erreur lors de la génération du PDF: ${error.message}`);
+    }
+  }
+
+  function generateMovementsPrintHTML(allMovements: any[]): string {
+    // Créer une date UTC pour éviter les problèmes de timezone
+    const date = getMonthDate(selectedMonth);
+    const monthYear = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const printDate = new Date().toLocaleDateString('fr-FR');
+    
+    // Fonction pour échapper le HTML
+    const escapeHtml = (text: string) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+
+    const generateRows = () => allMovements.map((movement: any) => {
+      const productName = escapeHtml(movement.product?.nom || 'Produit inconnu');
+      const lotNumero = movement.lot_numero ? escapeHtml(movement.lot_numero) : '-';
+      const note = movement.note ? escapeHtml(movement.note) : '-';
+      const typeColor = movement.type_mouvement === 'ENTREE' ? '#22c55e' : '#3b82f6';
+      
+      return `
+        <tr>
+          <td style="font-size: 9px;">${formatDate(movement.date_mouvement)}</td>
+          <td style="font-size: 9px; color: ${typeColor}; font-weight: 600;">${movement.type_mouvement}</td>
+          <td style="font-size: 9px;">${productName}</td>
+          <td style="font-size: 9px; text-align: center;">${lotNumero}</td>
+          <td style="font-size: 9px; text-align: right;">${movement.type_mouvement === 'SORTIE' ? '-' : ''}${formatNumber(movement.quantite)}</td>
+          <td style="font-size: 9px; text-align: right;">${formatCurrency(movement.prix_unitaire)}</td>
+          <td style="font-size: 9px; text-align: right;">${formatCurrency(movement.valeur_totale)}</td>
+          <td style="font-size: 9px; text-align: right; font-weight: 600;">${formatNumber(movement.solde_apres)}</td>
+          <td style="font-size: 9px;">${note}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Mouvements du Mois - ${monthYear}</title>
+        <style>
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 1cm;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: white;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #1e293b;
+            padding-bottom: 15px;
+          }
+          .header h1 {
+            font-size: 20px;
+            color: #1e293b;
+            margin-bottom: 5px;
+          }
+          .header h2 {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 10px;
+          }
+          .header .meta {
+            font-size: 10px;
+            color: #64748b;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 8px 6px;
+            text-align: left;
+            border: 1px solid #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          td {
+            padding: 6px 6px;
+            border: 1px solid #e2e8f0;
+            vertical-align: top;
+          }
+          tr:nth-child(even) {
+            background-color: #f9fafb;
+          }
+          .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 9px;
+            color: #64748b;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>CHRB – Gestion de Stock</h1>
+          <h2>Mouvements du Mois</h2>
+          <div class="meta">
+            Période: ${monthYear} | Imprimé le: ${printDate} | Total: ${allMovements.length} mouvements
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%;">Date</th>
+              <th style="width: 7%;">Type</th>
+              <th style="width: 22%;">Produit</th>
+              <th style="width: 10%;">Lot</th>
+              <th style="width: 7%; text-align: right;">Qté</th>
+              <th style="width: 9%; text-align: right;">Prix Unit.</th>
+              <th style="width: 10%; text-align: right;">Valeur</th>
+              <th style="width: 7%; text-align: right;">Solde</th>
+              <th style="width: 20%;">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${generateRows()}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          Document généré automatiquement le ${printDate}
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
   function handlePrint(mode: 'current' | 'all') {
     setPrintMode(mode);
     // Small delay to allow state update before printing
@@ -466,30 +665,22 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           </button>
         </div>
 
-        {/* Mobile: Secondary actions in 2-column grid */}
-        <div className="grid grid-cols-2 gap-2 sm:hidden print:hidden">
+        {/* Mobile: Secondary actions - Optimized cute design */}
+        <div className="flex flex-wrap gap-2 justify-center sm:hidden print:hidden">
           <button
             onClick={handleExport}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 text-slate-700 bg-white rounded-md hover:bg-slate-50 transition-colors text-sm font-medium"
+            className="flex-1 min-w-[140px] max-w-[180px] h-10 inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium"
             aria-label="Exporter en CSV"
           >
-            <Upload className="w-4 h-4 flex-shrink-0" />
+            <FileText className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
             <span className="truncate">CSV</span>
           </button>
           <button
-            onClick={() => handlePrint('current')}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-green-300 text-green-700 bg-white rounded-md hover:bg-green-50 transition-colors text-sm font-medium"
-            aria-label="Imprimer la page courante"
+            onClick={handlePrintPDF}
+            className="flex-1 min-w-[140px] max-w-[180px] h-10 inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium"
+            aria-label="Télécharger PDF de tous les mouvements"
           >
-            <Printer className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">Page</span>
-          </button>
-          <button
-            onClick={() => handlePrint('all')}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-green-300 text-green-700 bg-white rounded-md hover:bg-green-50 transition-colors text-sm font-medium col-span-2"
-            aria-label="Imprimer tous les mouvements"
-          >
-            <Printer className="w-4 h-4 flex-shrink-0" />
+            <Download className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
             <span className="truncate">Tout</span>
           </button>
         </div>
