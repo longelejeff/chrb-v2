@@ -403,20 +403,19 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-          <div>
+          <div className="w-full sm:w-auto">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Produits</h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">Gestion du catalogue</p>
           </div>
           <button
             onClick={() => openModal()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nouveau Produit</span>
-            <span className="sm:hidden">Ajouter</span>
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            Nouveau Produit
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

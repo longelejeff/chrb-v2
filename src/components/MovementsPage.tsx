@@ -451,38 +451,38 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium print:hidden"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm print:hidden"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 flex-shrink-0" />
             Nouveau Mouvement
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 print:hidden">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 print:hidden">
           <button
             onClick={handleExport}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-4 h-4 flex-shrink-0" />
             Exporter CSV
           </button>
           <button
             onClick={() => handlePrint('current')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium"
           >
-            <Printer className="w-4 h-4" />
-            Imprimer Page Actuelle
+            <Printer className="w-4 h-4 flex-shrink-0" />
+            <span className="sm:inline">Imprimer Page</span>
           </button>
           <button
             onClick={() => handlePrint('all')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-xs sm:text-sm font-medium"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4 flex-shrink-0" />
             Imprimer Tout
           </button>
         </div>
@@ -751,62 +751,64 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4 mb-4">
-          <div className="flex-1 flex items-center gap-2">
-            <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
             <input
               type="text"
               placeholder="Rechercher un produit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
-          <select
-            value={productFilter}
-            onChange={(e) => setProductFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          >
-            <option value="">Tous les produits</option>
-            {products.map(product => (
-              <option key={product.id} value={product.id}>
-                {product.code} - {product.nom}
-              </option>
-            ))}
-          </select>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          >
-            <option value="ALL">Tous les types</option>
-            <option value="ENTREE">Entrées</option>
-            <option value="SORTIE">Sorties</option>
-          </select>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={productFilter}
+              onChange={(e) => setProductFilter(e.target.value)}
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="">Tous les produits</option>
+              {products.map(product => (
+                <option key={product.id} value={product.id}>
+                  {product.code} - {product.nom}
+                </option>
+              ))}
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="ALL">Tous les types</option>
+              <option value="ENTREE">Entrées</option>
+              <option value="SORTIE">Sorties</option>
+            </select>
+          </div>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <div className="inline-block min-w-full align-middle px-2 sm:px-0">
             <table className="min-w-full table-auto">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-24 sm:w-28">Date</th>
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 max-w-xs">Produit</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Qté</th>
-                  <th className="hidden sm:table-cell text-right py-3 px-4 text-sm font-semibold text-slate-700 w-24">Prix Unit.</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Solde</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 w-16 sm:w-20">Actions</th>
+                  <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Date</th>
+                  <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700">Produit</th>
+                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Qté</th>
+                  <th className="hidden sm:table-cell text-right py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Prix Unit.</th>
+                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Solde</th>
+                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {displayMovements.map((movement: any) => {
                   return (
                     <tr key={movement.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
-                      <td className="py-3 px-3 sm:px-4 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 whitespace-nowrap">{formatDate(movement.date_mouvement)}</td>
+                      <td className="py-2 px-2 sm:py-3 sm:px-4">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <span className={`inline-block px-1 sm:px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
                             movement.type_mouvement === 'ENTREE' 
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-red-100 text-red-700'
@@ -814,24 +816,25 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                             {movement.type_mouvement === 'ENTREE' ? 'E' : 'S'}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs sm:text-sm text-slate-700 font-medium truncate">{movement.product?.nom}</div>
-                            <div className="text-xs text-slate-500 truncate">
-                              {/* @ts-ignore */}
-                              {movement.lot_numero && `Lot: ${movement.lot_numero}`}
-                            </div>
+                            <div className="text-xs text-slate-700 font-medium truncate">{movement.product?.nom}</div>
+                            {movement.lot_numero && (
+                              <div className="text-xs text-slate-500 truncate">
+                                Lot: {movement.lot_numero}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium whitespace-nowrap">
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">
                         {movement.type_mouvement === 'SORTIE' ? '-' : '+'}
                         {formatNumber(movement.quantite)}
                       </td>
-                      <td className="hidden sm:table-cell py-3 px-4 text-sm text-slate-600 text-right">{formatCurrency(movement.prix_unitaire)}</td>
-                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{formatNumber(movement.solde_apres)}</td>
-                      <td className="py-3 px-3 sm:px-4 text-right">
+                      <td className="hidden sm:table-cell py-3 px-4 text-xs text-slate-600 text-right whitespace-nowrap">{formatCurrency(movement.prix_unitaire)}</td>
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">{formatNumber(movement.solde_apres)}</td>
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-right">
                         <button
                           onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                          className="p-1 sm:p-1.5 hover:bg-slate-100 rounded transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
@@ -844,7 +847,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             </table>
           </div>
           {movements.length === 0 && (
-            <div className="text-center py-8 text-slate-500">Aucun mouvement trouvé</div>
+            <div className="text-center py-8 text-slate-500 text-sm">Aucun mouvement trouvé</div>
           )}
           
           <div className="print:hidden">

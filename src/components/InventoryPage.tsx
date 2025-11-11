@@ -492,10 +492,10 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 w-full">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">
               Statut: {isValidated ? (
@@ -515,8 +515,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm flex-shrink-0"
             >
               <Lock className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Valider l'inventaire</span>
-              <span className="sm:hidden">Valider</span>
+              <span>Valider l'inventaire</span>
             </button>
           )}
         </div>
@@ -560,15 +559,15 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
           />
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <div className="inline-block min-w-full align-middle px-2 sm:px-0">
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Produit</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Théorique</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Physique</th>
-                  <th className="text-right py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700">Écart</th>
+                  <th className="text-left py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Produit</th>
+                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Théorique</th>
+                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Physique</th>
+                  <th className="text-right py-2 px-2 sm:py-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Écart</th>
                 </tr>
               </thead>
               <tbody>
@@ -579,11 +578,11 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                   
                   return (
                     <tr key={line.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 font-medium">{line.product?.nom}</td>
-                      <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right">{formatNumber(stockTheorique)}</td>
-                      <td className="py-3 px-3 sm:px-4 text-right">
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 font-medium max-w-[150px] sm:max-w-none truncate">{line.product?.nom}</td>
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-xs text-slate-700 text-right whitespace-nowrap">{formatNumber(stockTheorique)}</td>
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-right">
                         {isValidated ? (
-                          <span className="text-xs sm:text-sm text-slate-700">{formatNumber(stockPhysique)}</span>
+                          <span className="text-xs text-slate-700">{formatNumber(stockPhysique)}</span>
                         ) : (
                           <input
                             type="number"
@@ -591,19 +590,19 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                             min="0"
                             value={stockPhysique}
                             onChange={(e) => updateLine(line.id, parseInt(e.target.value) || 0)}
-                            className="w-16 sm:w-24 px-2 py-1 text-xs sm:text-sm text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-14 sm:w-20 px-1 sm:px-2 py-1 text-xs text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         )}
                       </td>
-                      <td className="py-3 px-3 sm:px-4 text-right">
+                      <td className="py-2 px-2 sm:py-3 sm:px-4 text-right">
                         <span
-                          className={`inline-block px-2 py-1 rounded text-xs sm:text-sm font-medium ${
+                          className={`inline-block px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-medium whitespace-nowrap ${
                             ecart === 0
                               ? 'bg-slate-100 text-slate-700'
                               : ecart > 0
                               ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
+                            : 'bg-red-100 text-red-700'
+                        }`}
                         >
                           {ecart > 0 ? '+' : ''}{formatNumber(ecart)}
                         </span>
@@ -615,7 +614,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             </table>
           </div>
           {lines.length === 0 && (
-            <div className="text-center py-8 text-slate-500">Aucun produit trouvé</div>
+            <div className="text-center py-8 text-slate-500 text-sm">Aucun produit trouvé</div>
           )}
         </div>
 
