@@ -292,7 +292,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
               <tbody>
                 {lines.map((line: any) => {
                   const stockTheorique = line.product?.stock_actuel || 0;
-                  const ecart = (line.stock_physique || 0) - stockTheorique;
+                  const stockPhysique = line.stock_physique || 0;
+                  const ecart = stockPhysique - stockTheorique;
                   
                   return (
                     <tr key={line.id} className="border-b border-slate-100 hover:bg-slate-50">
@@ -300,13 +301,13 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                       <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right">{formatNumber(stockTheorique)}</td>
                       <td className="py-3 px-3 sm:px-4 text-right">
                         {isValidated ? (
-                          <span className="text-xs sm:text-sm text-slate-700">{formatNumber(line.stock_physique)}</span>
+                          <span className="text-xs sm:text-sm text-slate-700">{formatNumber(stockPhysique)}</span>
                         ) : (
                           <input
                             type="number"
                             step="1"
                             min="0"
-                            value={line.stock_physique || 0}
+                            value={stockPhysique}
                             onChange={(e) => updateLine(line.id, parseInt(e.target.value) || 0)}
                             className="w-16 sm:w-24 px-2 py-1 text-xs sm:text-sm text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
