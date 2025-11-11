@@ -522,36 +522,20 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
           )}
         </div>
 
-        {/* Mobile: Secondary actions in 2-column grid */}
-        <div className="grid grid-cols-2 gap-2 sm:hidden">
-          <button
-            onClick={handleExport}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 text-slate-700 bg-white rounded-md hover:bg-slate-50 transition-colors text-sm font-medium"
-            aria-label="Exporter l'inventaire"
-          >
-            <Upload className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">Exporter</span>
-          </button>
-          <button
-            onClick={handlePrint}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-indigo-300 text-indigo-700 bg-white rounded-md hover:bg-indigo-50 transition-colors text-sm font-medium"
-            aria-label="Imprimer l'inventaire en PDF"
-          >
-            <Printer className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">PDF</span>
-          </button>
-          {!isValidated && (
+        {/* Mobile: Single save button - Prominent design */}
+        {!isValidated && (
+          <div className="flex justify-center sm:hidden">
             <button
               onClick={saveInventory}
               disabled={saving}
-              className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-blue-300 text-blue-700 bg-white rounded-md hover:bg-blue-50 transition-colors disabled:opacity-50 text-sm font-medium col-span-2"
+              className="w-full max-w-xs inline-flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
               aria-label="Sauvegarder l'inventaire"
             >
-              <Save className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">Sauver</span>
+              <Save className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
+              <span>Sauvegarder</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Desktop: Secondary actions in row */}
         <div className="hidden sm:flex gap-3">

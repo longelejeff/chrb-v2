@@ -421,39 +421,6 @@ export function ProductsPage() {
           </button>
         </div>
 
-        {/* Mobile: Secondary actions in 2-column grid */}
-        <div className="grid grid-cols-2 gap-2 sm:hidden">
-          <button
-            onClick={() => setShowQuickImport(true)}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-amber-300 text-amber-700 bg-white rounded-md hover:bg-amber-50 transition-colors text-sm font-medium"
-            aria-label="Import rapide de produits"
-          >
-            <FileText className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">Import</span>
-          </button>
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept=".csv,.txt"
-              onChange={handleImportCSV}
-              className="hidden"
-              aria-label="Importer un fichier CSV"
-            />
-            <div className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-green-300 text-green-700 bg-white rounded-md hover:bg-green-50 transition-colors text-sm font-medium w-full">
-              <Upload className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">CSV</span>
-            </div>
-          </label>
-          <button
-            onClick={handleExport}
-            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 text-slate-700 bg-white rounded-md hover:bg-slate-50 transition-colors text-sm font-medium col-span-2"
-            aria-label="Exporter la liste des produits"
-          >
-            <Upload className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">Exporter</span>
-          </button>
-        </div>
-
         {/* Desktop: Secondary actions in 3-column grid */}
         <div className="hidden sm:grid grid-cols-3 gap-2">
           <button

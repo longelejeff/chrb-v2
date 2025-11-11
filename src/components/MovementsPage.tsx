@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Plus, Search, Upload, Trash2, Printer, FileText, Download } from 'lucide-react';
+import { Plus, Search, Upload, Trash2, Printer, Download } from 'lucide-react';
 import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth, getMonthFromDate, getMonthDate } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
@@ -665,19 +665,11 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           </button>
         </div>
 
-        {/* Mobile: Secondary actions - Optimized cute design */}
-        <div className="flex flex-wrap gap-2 justify-center sm:hidden print:hidden">
-          <button
-            onClick={handleExport}
-            className="flex-1 min-w-[140px] max-w-[180px] h-10 inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium"
-            aria-label="Exporter en CSV"
-          >
-            <FileText className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
-            <span className="truncate">CSV</span>
-          </button>
+        {/* Mobile: Single PDF button - Streamlined design */}
+        <div className="flex justify-center sm:hidden print:hidden">
           <button
             onClick={handlePrintPDF}
-            className="flex-1 min-w-[140px] max-w-[180px] h-10 inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="w-full max-w-[200px] h-10 inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium"
             aria-label="Télécharger PDF de tous les mouvements"
           >
             <Download className="w-4 h-4 flex-shrink-0 stroke-[1.5]" />
