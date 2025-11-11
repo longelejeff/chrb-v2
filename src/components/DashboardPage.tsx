@@ -1,12 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
-import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
+import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock } from 'lucide-react';
 import { formatNumber, formatCurrencyCompact, formatDate } from '../lib/utils';
 import { useDashboard } from '../lib/hooks';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
-import { useQueryClient } from '@tanstack/react-query';
-import ConfirmModal from './ConfirmModal';
 
 interface DashboardStats {
   totalProducts: number;
@@ -52,11 +47,7 @@ interface RecentMovement {
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
-  const { user, profile } = useAuth();
-  const { showToast } = useToast();
-  const queryClient = useQueryClient();
   const { data, isLoading, error } = useDashboard(selectedMonth);
-  const [confirmClear, setConfirmClear] = useState(false);
 
   const stats = useMemo(() => {
     if (!data) {
@@ -187,35 +178,10 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     };
   }, [data]);
 
-  const topProducts = useMemo(() => {
-    if (!data) return [];
-    
-    // @ts-ignore - Supabase type inference
-    const activeProducts = data.products.filter(p => p.actif);
-    return activeProducts.slice(0, 5);
-  }, [data]);
-
-  const lowStockProducts = useMemo(() => {
-    if (!data) return [];
-    
-    // @ts-ignore - Supabase type inference
-    const activeProducts = data.products.filter(p => p.actif);
-    const lowStock: LowStockProduct[] = [];
-
-    // @ts-ignore - Supabase type inference
-    for (const product of activeProducts) {
-      // @ts-ignore - Supabase type inference
-      if ((product.stock_actuel || 0) > 0 && (product.stock_actuel || 0) <= product.seuil_alerte) {
-        lowStock.push(product);
-      }
-    }
-
-    return lowStock.slice(0, 5);
-  }, [data]);
-
   const recentMovements = useMemo(() => {
     if (!data) return [];
-    return data.recentMovements;
+    // Limit to 3 most recent movements
+    return data.recentMovements.slice(0, 3);
   }, [data]);
 
   // Calculate products for each alert type
@@ -328,37 +294,6 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     };
   }, [data]);
 
-  async function handleClearRecentActivity() {
-    try {
-      if (!data?.recentMovements || data.recentMovements.length === 0) {
-        showToast('info', 'Aucune activité récente à effacer');
-        return;
-      }
-
-      // Delete recent movements
-      const movementIds = data.recentMovements.map((m: any) => m.id);
-      
-      const { error } = await supabase
-        .from('mouvements')
-        .delete()
-        .in('id', movementIds);
-
-      if (error) throw error;
-
-      // Refresh dashboard data - force refetch
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'], refetchType: 'active' });
-      await queryClient.refetchQueries({ queryKey: ['dashboard'] });
-      await queryClient.invalidateQueries({ queryKey: ['products'] });
-      await queryClient.invalidateQueries({ queryKey: ['movements'] });
-      
-      showToast('success', `${movementIds.length} mouvements récents supprimés`);
-      setConfirmClear(false);
-    } catch (error: any) {
-      showToast('error', `Erreur lors de la suppression: ${error.message}`);
-      setConfirmClear(false);
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -447,9 +382,11 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       </div>
 
+      {/* Activité & Alertes - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Graphique d'activité du mois */}
+        {/* Activité du Mois & Récente - Merged Card */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          {/* Bloc A: Activité du Mois */}
           <div className="flex items-center gap-2 sm:gap-3 mb-4">
             <div className="bg-indigo-100 p-2 rounded-lg flex-shrink-0">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
@@ -509,9 +446,57 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
               </p>
             </div>
           </div>
+
+          {/* Separator */}
+          <div className="border-t border-slate-200 my-4"></div>
+
+          {/* Bloc B: Activité Récente (3 derniers mouvements) */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+            </div>
+            <h4 className="text-sm sm:text-base font-semibold text-slate-800">Activité Récente</h4>
+          </div>
+
+          {recentMovements.length === 0 ? (
+            <div className="text-center py-6 text-slate-500 text-sm">
+              Aucune activité récente
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentMovements.map((movement: any) => (
+                <div key={movement.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                      {movement.type_mouvement === 'ENTREE' ? (
+                        <TrendingUp className={`w-3 h-3 sm:w-4 sm:h-4 text-green-600`} />
+                      ) : (
+                        <TrendingDown className={`w-3 h-3 sm:w-4 sm:h-4 text-blue-600`} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">
+                        {movement.product?.nom || 'Produit inconnu'}
+                      </p>
+                      <p className="text-xs text-slate-600 truncate">
+                        {movement.product?.code || ''} 
+                        {movement.lot_numero && ` • Lot: ${movement.lot_numero}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <p className={`font-bold text-xs sm:text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
+                      {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
+                    </p>
+                    <p className="text-xs text-slate-500 hidden sm:block">{formatDate(movement.date_mouvement)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Alertes - Now on the right (swapped with Top 5) */}
+        {/* Alertes - Right Side */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-4">
             <div className="bg-orange-100 p-2 rounded-lg flex-shrink-0">
@@ -593,119 +578,6 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
           </div>
         </div>
       </div>
-
-      {/* Recent Activity and Top 5 Products - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Recent Activity - Left Side */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Activité Récente</h3>
-            </div>
-            {profile?.role === 'ADMIN' && (
-              <button
-                onClick={() => {
-                  if (recentMovements && recentMovements.length > 0) {
-                    setConfirmClear(true);
-                  } else {
-                    showToast('info', 'Aucune activité récente à effacer');
-                  }
-                }}
-                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
-                title="Effacer l'activité récente"
-              >
-                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Effacer</span>
-              </button>
-            )}
-          </div>
-
-          {recentMovements.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-sm">
-              Aucune activité récente
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {recentMovements.map((movement) => (
-                <div key={movement.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${movement.type_mouvement === 'ENTREE' ? 'bg-green-100' : 'bg-blue-100'}`}>
-                      {movement.type_mouvement === 'ENTREE' ? (
-                        <TrendingUp className={`w-3 h-3 sm:w-4 sm:h-4 text-green-600`} />
-                      ) : (
-                        <TrendingDown className={`w-3 h-3 sm:w-4 sm:h-4 text-blue-600`} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">
-                        {/* @ts-ignore - Joined table type */}
-                        {movement.product?.nom || 'Produit inconnu'}
-                      </p>
-                      <p className="text-xs text-slate-600 truncate">
-                        {/* @ts-ignore - Joined table type */}
-                        {movement.product?.code || ''} 
-                        {movement.lot_numero && ` • Lot: ${movement.lot_numero}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right ml-2 flex-shrink-0">
-                    <p className={`font-bold text-xs sm:text-sm ${movement.type_mouvement === 'ENTREE' ? 'text-green-600' : 'text-blue-600'}`}>
-                      {movement.type_mouvement === 'ENTREE' ? '+' : '-'}{formatNumber(movement.quantite)}
-                    </p>
-                    <p className="text-xs text-slate-500 hidden sm:block">{formatDate(movement.date_mouvement)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Top 5 Produits par Valeur - Now on the right (swapped with Alertes) */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4">
-            <div className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
-              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800">Top 5 Produits</h3>
-          </div>
-
-          {topProducts.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-sm">
-              Aucun produit avec valeur de stock
-            </div>
-          ) : (
-            <div className="space-y-2 sm:space-y-3">
-              {topProducts.map((product, index) => (
-                <div key={product.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div className="bg-blue-100 text-blue-700 font-bold text-xs sm:text-sm w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                      {index + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">{product.nom}</p>
-                      <p className="text-xs text-slate-600 truncate">{product.code} • {formatNumber(product.stock_actuel)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right ml-2 flex-shrink-0">
-                    <p className="font-bold text-slate-800 text-xs sm:text-sm">{formatCurrencyCompact(product.valeur_stock)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <ConfirmModal
-        isOpen={confirmClear}
-        onClose={() => setConfirmClear(false)}
-        onConfirm={handleClearRecentActivity}
-        title="Effacer l'activité récente"
-        message={`Êtes-vous sûr de vouloir supprimer les ${recentMovements.length} derniers mouvements affichés dans l'activité récente ? Cette action est irréversible.`}
-      />
     </div>
   );
 }
