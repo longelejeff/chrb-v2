@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Save, Lock, Search, Upload } from 'lucide-react';
+import { Save, Lock, Search, Upload, Printer } from 'lucide-react';
 import { formatNumber, exportToCSV, formatDate } from '../lib/utils';
 import { PaginationControls } from './PaginationControls';
 import { useInventoryLines } from '../lib/hooks';
@@ -200,6 +200,251 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
     exportToCSV(exportData, `inventaire_${selectedMonth}`);
   }
 
+  async function handlePrint() {
+    try {
+      // Récupérer tous les produits (sans pagination)
+      const { data: allLines, error } = await supabase
+        .from('lignes_inventaire')
+        .select('*, product:products(*)')
+        .eq('inventaire_id', inventory!.id)
+        .order('product(nom)');
+
+      if (error) throw error;
+
+      // Créer le contenu HTML pour l'impression
+      const printContent = generatePrintHTML(allLines || []);
+      
+      // Ouvrir une nouvelle fenêtre et imprimer
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Attendre que les styles soient chargés puis imprimer
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      }
+    } catch (error: any) {
+      showToast('error', `Erreur lors de la génération du PDF: ${error.message}`);
+    }
+  }
+
+  function generatePrintHTML(allLines: any[]): string {
+    const monthYear = new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const printDate = new Date().toLocaleDateString('fr-FR');
+    
+    // Diviser les produits en 2 colonnes
+    const halfLength = Math.ceil(allLines.length / 2);
+    const leftColumn = allLines.slice(0, halfLength);
+    const rightColumn = allLines.slice(halfLength);
+
+    const generateRows = (items: any[]) => items.map((line: any) => {
+      const stockTheorique = line.product?.stock_actuel || 0;
+      return `
+        <tr>
+          <td class="border px-2 py-1 text-sm">${line.product?.nom || ''}</td>
+          <td class="border px-2 py-1 text-center text-sm">${formatNumber(stockTheorique)}</td>
+          <td class="border px-2 py-1 text-center text-sm"></td>
+          <td class="border px-2 py-1 text-center text-sm"></td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Inventaire Mensuel - ${monthYear}</title>
+        <style>
+          @media print {
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #1e293b;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3b82f6;
+          }
+          
+          .header h1 {
+            font-size: 20pt;
+            color: #1e40af;
+            margin-bottom: 5px;
+            font-weight: 700;
+          }
+          
+          .header h2 {
+            font-size: 14pt;
+            color: #475569;
+            margin-bottom: 8px;
+            font-weight: 600;
+          }
+          
+          .header-info {
+            font-size: 10pt;
+            color: #64748b;
+          }
+          
+          .columns-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+          }
+          
+          .column {
+            flex: 1;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+          }
+          
+          th {
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 9pt;
+            border: 1px solid #2563eb;
+          }
+          
+          td {
+            border: 1px solid #cbd5e1;
+            padding: 4px 8px;
+            font-size: 9pt;
+          }
+          
+          tr:nth-child(even) {
+            background-color: #f8fafc;
+          }
+          
+          .text-center {
+            text-align: center;
+          }
+          
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid;
+          }
+          
+          .signature-box {
+            flex: 1;
+            margin: 0 10px;
+          }
+          
+          .signature-box label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #475569;
+            font-size: 10pt;
+          }
+          
+          .signature-line {
+            border-top: 1px solid #334155;
+            padding-top: 5px;
+            text-align: center;
+            color: #64748b;
+            font-size: 9pt;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>CHRB Gestion de Stock</h1>
+          <h2>Inventaire Mensuel</h2>
+          <div class="header-info">
+            <strong>Période:</strong> ${monthYear} | 
+            <strong>Date d'impression:</strong> ${printDate}
+          </div>
+        </div>
+        
+        <div class="columns-container">
+          <div class="column">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th class="text-center">Théorique</th>
+                  <th class="text-center">Physique</th>
+                  <th class="text-center">Écart</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${generateRows(leftColumn)}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="column">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th class="text-center">Théorique</th>
+                  <th class="text-center">Physique</th>
+                  <th class="text-center">Écart</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${generateRows(rightColumn)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="signature-box">
+            <label>Signature:</label>
+            <div class="signature-line">Signature du contrôleur</div>
+          </div>
+          
+          <div class="signature-box">
+            <label>Validé par:</label>
+            <div class="signature-line">Nom et signature</div>
+          </div>
+          
+          <div class="signature-box">
+            <label>Date:</label>
+            <div class="signature-line">JJ/MM/AAAA</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
   function handlePageChange(newPage: number) {
     setPage(newPage);
   }
@@ -252,6 +497,13 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
           >
             <Upload className="w-4 h-4 flex-shrink-0" />
             Exporter
+          </button>
+          <button
+            onClick={handlePrint}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium"
+          >
+            <Printer className="w-4 h-4 flex-shrink-0" />
+            Imprimer (PDF)
           </button>
           {!isValidated && (
             <button
