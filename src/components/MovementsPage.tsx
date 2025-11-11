@@ -908,16 +908,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           <div className="text-center py-8 text-slate-500 text-sm">Aucun mouvement trouvé</div>
         )}
           
-          <div className="print:hidden">
-            <PaginationControls
-              currentPage={page}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={totalMovements}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-            />
-          </div>
+        <div className="print:hidden">
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalMovements}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
       </div>
 
