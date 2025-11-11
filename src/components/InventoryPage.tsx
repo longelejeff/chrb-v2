@@ -674,15 +674,14 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         )}
       </div>
 
-        <PaginationControls
-          currentPage={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={totalLines}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
-        />
-      </div>
+      <PaginationControls
+        currentPage={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalLines}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
 
       {!isValidated && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
