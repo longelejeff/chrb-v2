@@ -202,31 +202,51 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
 
   async function handlePrint() {
     try {
+      if (!inventory?.id) {
+        showToast('error', 'Aucun inventaire trouvé');
+        return;
+      }
+
       // Récupérer tous les produits (sans pagination)
       const { data: allLines, error } = await supabase
         .from('lignes_inventaire')
-        .select('*, product:products(*)')
-        .eq('inventaire_id', inventory!.id)
-        .order('product(nom)');
+        .select('*, product:products!inner(*)')
+        .eq('inventaire_id', inventory.id)
+        .order('product(nom)', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
+
+      if (!allLines || allLines.length === 0) {
+        showToast('warning', 'Aucun produit dans l\'inventaire');
+        return;
+      }
+
+      console.log('Lignes récupérées:', allLines.length);
 
       // Créer le contenu HTML pour l'impression
-      const printContent = generatePrintHTML(allLines || []);
+      const printContent = generatePrintHTML(allLines);
       
       // Ouvrir une nouvelle fenêtre et imprimer
       const printWindow = window.open('', '_blank');
       if (printWindow) {
+        printWindow.document.open();
         printWindow.document.write(printContent);
         printWindow.document.close();
-        printWindow.focus();
         
-        // Attendre que les styles soient chargés puis imprimer
-        setTimeout(() => {
-          printWindow.print();
-        }, 250);
+        // Attendre que le contenu soit rendu puis imprimer
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      } else {
+        showToast('error', 'Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez les popups bloqués.');
       }
     } catch (error: any) {
+      console.error('Erreur lors de l\'impression:', error);
       showToast('error', `Erreur lors de la génération du PDF: ${error.message}`);
     }
   }
@@ -235,6 +255,13 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
     const monthYear = new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const printDate = new Date().toLocaleDateString('fr-FR');
     
+    // Fonction pour échapper le HTML
+    const escapeHtml = (text: string) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+    
     // Diviser les produits en 2 colonnes
     const halfLength = Math.ceil(allLines.length / 2);
     const leftColumn = allLines.slice(0, halfLength);
@@ -242,12 +269,13 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
 
     const generateRows = (items: any[]) => items.map((line: any) => {
       const stockTheorique = line.product?.stock_actuel || 0;
+      const productName = escapeHtml(line.product?.nom || '');
       return `
         <tr>
-          <td class="border px-2 py-1 text-sm">${line.product?.nom || ''}</td>
-          <td class="border px-2 py-1 text-center text-sm">${formatNumber(stockTheorique)}</td>
-          <td class="border px-2 py-1 text-center text-sm"></td>
-          <td class="border px-2 py-1 text-center text-sm"></td>
+          <td>${productName}</td>
+          <td style="text-align: center;">${formatNumber(stockTheorique)}</td>
+          <td style="text-align: center;"></td>
+          <td style="text-align: center;"></td>
         </tr>
       `;
     }).join('');
