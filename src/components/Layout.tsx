@@ -4,7 +4,7 @@ import {
   Package, Home, TrendingUp, ClipboardList, Calendar,
   AlertTriangle, LogOut, Menu, X, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
-import { getCurrentMonth, getPreviousMonth, getNextMonth, formatMonth } from '../lib/utils';
+import { getCurrentMonth, getPreviousMonth, getNextMonth, formatMonth, formatMonthShort } from '../lib/utils';
 
 interface LayoutProps {
   children: ReactNode;
@@ -43,36 +43,51 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="lg:hidden p-2 rounded-lg hover:bg-slate-100"
+                aria-label="Toggle menu"
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-800">CHRB</h1>
-                <p className="text-xs text-slate-600">Gestion de Stock</p>
+              
+              {/* Title as pill/badge with accent */}
+              <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 hover:bg-slate-200 transition-colors max-w-[200px] sm:max-w-none">
+                <div className="w-1 h-3.5 rounded-full bg-blue-600 flex-shrink-0" aria-hidden="true"></div>
+                <div className="min-w-0">
+                  <h1 className="text-base font-semibold text-slate-800 tracking-tight truncate">
+                    CHRB
+                  </h1>
+                  <p className="text-xs text-slate-600 hidden sm:block truncate">Gestion de Stock</p>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
-              <div className="flex items-center gap-1 sm:gap-2 bg-slate-100 rounded-lg px-2 sm:px-4 py-2">
+              {/* Month selector as pill */}
+              <div 
+                className="inline-flex items-center gap-1.5 sm:gap-2 bg-slate-100 rounded-full px-3 py-1.5 hover:bg-slate-200 transition-colors"
+                aria-label={formatMonth(selectedMonth)}
+              >
                 <button
                   onClick={() => onMonthChange(getPreviousMonth(selectedMonth))}
-                  className="p-1 hover:bg-white rounded transition-colors"
+                  className="p-0.5 sm:p-1 hover:bg-white rounded-full transition-colors"
+                  aria-label="Mois précédent"
                 >
-                  <ChevronLeft className="w-3 sm:w-4 h-3 sm:h-4" />
+                  <ChevronLeft className="w-4 h-4 text-slate-700" />
                 </button>
-                <span className="font-medium text-slate-700 min-w-[90px] sm:min-w-[120px] text-center text-xs sm:text-sm">
-                  {formatMonth(selectedMonth)}
+                <span className="font-medium text-slate-700 text-xs sm:text-sm whitespace-nowrap max-w-[40vw] sm:max-w-none overflow-hidden text-ellipsis">
+                  <span className="md:hidden">{formatMonthShort(selectedMonth)}</span>
+                  <span className="hidden md:inline">{formatMonth(selectedMonth)}</span>
                 </span>
                 <button
                   onClick={() => onMonthChange(getNextMonth(selectedMonth))}
-                  className="p-1 hover:bg-white rounded transition-colors disabled:opacity-50"
+                  className="p-0.5 sm:p-1 hover:bg-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={selectedMonth >= getCurrentMonth()}
+                  aria-label="Mois suivant"
                 >
-                  <ChevronRight className="w-3 sm:w-4 h-3 sm:h-4" />
+                  <ChevronRight className="w-4 h-4 text-slate-700" />
                 </button>
               </div>
 
@@ -85,6 +100,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
                   onClick={handleSignOut}
                   className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
                   title="Déconnexion"
+                  aria-label="Déconnexion"
                 >
                   <LogOut className="w-5 h-5 text-slate-600" />
                 </button>

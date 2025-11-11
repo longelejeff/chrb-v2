@@ -27,6 +27,15 @@ export function formatMonth(month: string): string {
   return `${monthNames[parseInt(m) - 1]} ${year}`;
 }
 
+export function formatMonthShort(month: string): string {
+  const [year, m] = month.split('-');
+  const monthNamesShort = [
+    'Jan.', 'Fév.', 'Mars', 'Avr.', 'Mai', 'Juin',
+    'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'
+  ];
+  return `${monthNamesShort[parseInt(m) - 1]} ${year}`;
+}
+
 export function getMonthDate(month: string): Date {
   // Crée une date au milieu du mois pour éviter les problèmes de timezone
   const [year, m] = month.split('-');
