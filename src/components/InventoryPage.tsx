@@ -554,22 +554,21 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
+      <div className="bg-white rounded-xl shadow-sm border-0 p-2 sm:p-4 transition-all duration-200">
+        <div className="relative mb-3 sm:mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Rechercher un produit..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200"
           />
         </div>
 
         {/* Desktop Table - Hidden on mobile */}
-        <div className="hidden sm:block overflow-x-auto -mx-2 sm:mx-0">
-          <div className="inline-block min-w-full align-middle px-2 sm:px-0">
-            <table className="min-w-full">
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Produit</th>
@@ -621,7 +620,6 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
               </tbody>
             </table>
           </div>
-        </div>
 
         {/* Mobile Card Layout - Compact et moderne */}
         <div className="sm:hidden space-y-2">
@@ -713,21 +711,6 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         cancelText="Annuler"
         type="warning"
       />
-
-      {/* Mobile: Sticky bottom bar for primary action */}
-      {!isValidated && (
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-lg z-40">
-          <button
-            onClick={() => setShowValidateModal(true)}
-            disabled={saving}
-            className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm shadow-sm"
-            aria-label="Valider l'inventaire mensuel"
-          >
-            <Lock className="w-4 h-4 flex-shrink-0" />
-            Valider
-          </button>
-        </div>
-      )}
 
       {/* Mobile: Bouton Sauvegarder sticky */}
       {!isValidated && (

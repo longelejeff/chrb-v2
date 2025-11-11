@@ -650,7 +650,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+    <div className="space-y-2 sm:space-y-6 px-2 sm:px-0 pb-24 sm:pb-0">
       <div className="flex flex-col gap-2 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
           <h2 className="text-lg sm:text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
@@ -662,18 +662,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
           >
             <Plus className="w-4 h-4 flex-shrink-0" />
             Nouveau Mouvement
-          </button>
-        </div>
-
-        {/* Mobile: Bouton PDF moderne */}
-        <div className="flex justify-center sm:hidden print:hidden mb-1">
-          <button
-            onClick={handlePrintPDF}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm font-medium"
-            aria-label="Télécharger PDF de tous les mouvements"
-          >
-            <Download className="w-4 h-4 flex-shrink-0 stroke-[2]" />
-            <span>Tout (PDF)</span>
           </button>
         </div>
 
@@ -969,23 +957,39 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 sm:p-4">
-        <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
+      <div className="bg-white rounded-xl shadow-sm border-0 p-2 sm:p-4 transition-all duration-200">
+        {/* Mobile: Bouton PDF - Au-dessus de la recherche */}
+        <div className="sm:hidden mb-3">
+          <button
+            onClick={handlePrintPDF}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm font-medium"
+            aria-label="Télécharger PDF de tous les mouvements"
+          >
+            <Download className="w-4 h-4 flex-shrink-0" />
+            <span>Tout (PDF)</span>
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-3 sm:mb-4">
+          {/* Champ de recherche - Style uniforme */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               placeholder="Rechercher un produit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200"
             />
           </div>
+          
+          {/* Filtres - Style moderne */}
           <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="flex-1 sm:flex-initial px-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200 appearance-none bg-no-repeat bg-right pr-10"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`, backgroundPosition: 'right 0.5rem center', backgroundSize: '1.5em 1.5em' }}
             >
               <option value="">Tous les produits</option>
               {products.map(product => (
@@ -997,7 +1001,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="flex-1 sm:flex-initial px-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200 appearance-none bg-no-repeat bg-right pr-10"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`, backgroundPosition: 'right 0.5rem center', backgroundSize: '1.5em 1.5em' }}
             >
               <option value="ALL">Tous les types</option>
               <option value="ENTREE">Entrées</option>
@@ -1007,9 +1012,8 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
 
         {/* Desktop Table - Hidden on mobile */}
-        <div className="hidden sm:block overflow-x-auto -mx-2 sm:mx-0">
-          <div className="inline-block min-w-full align-middle px-2 sm:px-0">
-            <table className="min-w-full table-auto">
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">Date</th>
@@ -1065,7 +1069,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
               </tbody>
             </table>
           </div>
-        </div>
 
         {/* Mobile Card Layout - Compact et moderne */}
         <div className="sm:hidden space-y-2">
@@ -1149,17 +1152,14 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         type="danger"
       />
 
-      {/* Mobile: Sticky bottom bar for primary action */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-lg z-40 print:hidden">
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
-          aria-label="Créer un nouveau mouvement de stock"
-        >
-          <Plus className="w-4 h-4 flex-shrink-0" />
-          Nouveau
-        </button>
-      </div>
+      {/* Mobile: FAB - Bouton flottant rond */}
+      <button
+        onClick={() => setShowForm(!showForm)}
+        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 z-40 hover:scale-110 print:hidden"
+        aria-label="Créer un nouveau mouvement de stock"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
     </div>
   );
 }
