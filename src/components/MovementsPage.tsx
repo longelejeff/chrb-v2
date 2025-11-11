@@ -451,36 +451,71 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      <div className="flex flex-col gap-3 sm:gap-4">
+    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+      <div className="flex flex-col gap-2 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
+          {/* Desktop: Primary action button */}
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm print:hidden"
+            className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm print:hidden"
+            aria-label="Créer un nouveau mouvement de stock"
           >
             <Plus className="w-4 h-4 flex-shrink-0" />
             Nouveau Mouvement
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 print:hidden">
+
+        {/* Mobile: Secondary actions in 2-column grid */}
+        <div className="grid grid-cols-2 gap-2 sm:hidden print:hidden">
           <button
             onClick={handleExport}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium"
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 text-slate-700 bg-white rounded-md hover:bg-slate-50 transition-colors text-sm font-medium"
+            aria-label="Exporter en CSV"
+          >
+            <Upload className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">CSV</span>
+          </button>
+          <button
+            onClick={() => handlePrint('current')}
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-green-300 text-green-700 bg-white rounded-md hover:bg-green-50 transition-colors text-sm font-medium"
+            aria-label="Imprimer la page courante"
+          >
+            <Printer className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Page</span>
+          </button>
+          <button
+            onClick={() => handlePrint('all')}
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-green-300 text-green-700 bg-white rounded-md hover:bg-green-50 transition-colors text-sm font-medium col-span-2"
+            aria-label="Imprimer tous les mouvements"
+          >
+            <Printer className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Tout</span>
+          </button>
+        </div>
+
+        {/* Desktop: Secondary actions in row */}
+        <div className="hidden sm:flex gap-3 print:hidden">
+          <button
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+            aria-label="Exporter en CSV"
           >
             <Upload className="w-4 h-4 flex-shrink-0" />
             Exporter CSV
           </button>
           <button
             onClick={() => handlePrint('current')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            aria-label="Imprimer la page courante"
           >
             <Printer className="w-4 h-4 flex-shrink-0" />
-            <span className="sm:inline">Imprimer Page</span>
+            Imprimer Page
           </button>
           <button
             onClick={() => handlePrint('all')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-xs sm:text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors text-sm font-medium"
+            aria-label="Imprimer tous les mouvements"
           >
             <Printer className="w-4 h-4 flex-shrink-0" />
             Imprimer Tout
@@ -930,6 +965,18 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Mobile: Sticky bottom bar for primary action */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-lg z-40 print:hidden">
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+          aria-label="Créer un nouveau mouvement de stock"
+        >
+          <Plus className="w-4 h-4 flex-shrink-0" />
+          Nouveau
+        </button>
+      </div>
     </div>
   );
 }

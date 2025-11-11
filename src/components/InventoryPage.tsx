@@ -492,8 +492,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      <div className="flex flex-col gap-3 sm:gap-4">
+    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+      <div className="flex flex-col gap-2 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <div className="min-w-0 flex-1 w-full">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Inventaire Mensuel</h2>
@@ -508,28 +508,65 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
               )}
             </p>
           </div>
+          {/* Desktop: Primary action button (Valider) */}
           {!isValidated && (
             <button
               onClick={() => setShowValidateModal(true)}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm flex-shrink-0"
+              className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm flex-shrink-0"
+              aria-label="Valider l'inventaire mensuel"
             >
               <Lock className="w-4 h-4 flex-shrink-0" />
               <span>Valider l'inventaire</span>
             </button>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+
+        {/* Mobile: Secondary actions in 2-column grid */}
+        <div className="grid grid-cols-2 gap-2 sm:hidden">
           <button
             onClick={handleExport}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium"
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 text-slate-700 bg-white rounded-md hover:bg-slate-50 transition-colors text-sm font-medium"
+            aria-label="Exporter l'inventaire"
+          >
+            <Upload className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Exporter</span>
+          </button>
+          <button
+            onClick={handlePrint}
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-indigo-300 text-indigo-700 bg-white rounded-md hover:bg-indigo-50 transition-colors text-sm font-medium"
+            aria-label="Imprimer l'inventaire en PDF"
+          >
+            <Printer className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">PDF</span>
+          </button>
+          {!isValidated && (
+            <button
+              onClick={saveInventory}
+              disabled={saving}
+              className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-blue-300 text-blue-700 bg-white rounded-md hover:bg-blue-50 transition-colors disabled:opacity-50 text-sm font-medium col-span-2"
+              aria-label="Sauvegarder l'inventaire"
+            >
+              <Save className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Sauver</span>
+            </button>
+          )}
+        </div>
+
+        {/* Desktop: Secondary actions in row */}
+        <div className="hidden sm:flex gap-3">
+          <button
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+            aria-label="Exporter l'inventaire"
           >
             <Upload className="w-4 h-4 flex-shrink-0" />
             Exporter
           </button>
           <button
             onClick={handlePrint}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+            aria-label="Imprimer l'inventaire en PDF"
           >
             <Printer className="w-4 h-4 flex-shrink-0" />
             Imprimer (PDF)
@@ -538,7 +575,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             <button
               onClick={saveInventory}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-xs sm:text-sm font-medium"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
+              aria-label="Sauvegarder l'inventaire"
             >
               <Save className="w-4 h-4 flex-shrink-0" />
               Sauvegarder
@@ -702,6 +740,21 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         cancelText="Annuler"
         type="warning"
       />
+
+      {/* Mobile: Sticky bottom bar for primary action */}
+      {!isValidated && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-lg z-40">
+          <button
+            onClick={() => setShowValidateModal(true)}
+            disabled={saving}
+            className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 font-medium text-sm shadow-sm"
+            aria-label="Valider l'inventaire mensuel"
+          >
+            <Lock className="w-4 h-4 flex-shrink-0" />
+            Valider
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -403,25 +403,63 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      <div className="flex flex-col gap-3 sm:gap-4">
+    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0 pb-20 sm:pb-0">
+      <div className="flex flex-col gap-2 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <div className="w-full sm:w-auto">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Produits</h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">Gestion du catalogue</p>
           </div>
+          {/* Desktop: Primary action button */}
           <button
             onClick={() => openModal()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
+            className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
+            aria-label="Créer un nouveau produit"
           >
             <Plus className="w-4 h-4 flex-shrink-0" />
             Nouveau Produit
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+
+        {/* Mobile: Secondary actions in 2-column grid */}
+        <div className="grid grid-cols-2 gap-2 sm:hidden">
           <button
             onClick={() => setShowQuickImport(true)}
-            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs sm:text-sm font-medium"
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-amber-300 text-amber-700 bg-white rounded-md hover:bg-amber-50 transition-colors text-sm font-medium"
+            aria-label="Import rapide de produits"
+          >
+            <FileText className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Import</span>
+          </button>
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".csv,.txt"
+              onChange={handleImportCSV}
+              className="hidden"
+              aria-label="Importer un fichier CSV"
+            />
+            <div className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-green-300 text-green-700 bg-white rounded-md hover:bg-green-50 transition-colors text-sm font-medium w-full">
+              <Upload className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">CSV</span>
+            </div>
+          </label>
+          <button
+            onClick={handleExport}
+            className="h-11 inline-flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 text-slate-700 bg-white rounded-md hover:bg-slate-50 transition-colors text-sm font-medium col-span-2"
+            aria-label="Exporter la liste des produits"
+          >
+            <Upload className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Exporter</span>
+          </button>
+        </div>
+
+        {/* Desktop: Secondary actions in 3-column grid */}
+        <div className="hidden sm:grid grid-cols-3 gap-2">
+          <button
+            onClick={() => setShowQuickImport(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+            aria-label="Import rapide de produits"
           >
             <FileText className="w-4 h-4 flex-shrink-0" />
             <span className="truncate">Import Rapide</span>
@@ -432,15 +470,17 @@ export function ProductsPage() {
               accept=".csv,.txt"
               onChange={handleImportCSV}
               className="hidden"
+              aria-label="Importer un fichier CSV"
             />
-            <div className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium">
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
               <Upload className="w-4 h-4 flex-shrink-0" />
               <span className="truncate">Importer CSV</span>
             </div>
           </label>
           <button
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+            aria-label="Exporter la liste des produits"
           >
             <Upload className="w-4 h-4 flex-shrink-0" />
             <span className="truncate">Exporter</span>
@@ -814,6 +854,18 @@ export function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Mobile: Sticky bottom bar for primary action */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-lg z-40">
+        <button
+          onClick={() => openModal()}
+          className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+          aria-label="Créer un nouveau produit"
+        >
+          <Plus className="w-4 h-4 flex-shrink-0" />
+          Nouveau
+        </button>
+      </div>
     </div>
   );
 }
