@@ -6,14 +6,18 @@ import { Save, Lock, Search, Upload, Printer } from 'lucide-react';
 import { formatNumber, exportToCSV, formatDate, getMonthDate } from '../lib/utils';
 import { PaginationControls } from './PaginationControls';
 import { useInventoryLines } from '../lib/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import ConfirmModal from './ConfirmModal';
 import type { Database } from '../lib/database.types';
+import { openPrintWindow, escapeHtml } from '../lib/printUtils';
 
 type Inventory = Database['public']['Tables']['inventaires']['Row'];
 
 export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const isReadOnly = profile?.role === 'LECTEUR';
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -71,12 +75,18 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         inv = newInv as any;
 
         await initializeInventoryLines((newInv as any).id);
+      } else {
+        // Inventory exists — sync: add lines for any new products not yet in the inventory
+        const invId = (inv as any).id;
+        const added = await syncInventoryLines(invId);
+        if (added) {
+          // New lines were inserted — force React Query to refetch
+          queryClient.invalidateQueries({ queryKey: ['inventory-lines'] });
+        }
       }
 
       setInventory(inv);
-
-      // Refetch lines after inventory is loaded
-      refetch();
+      // React Query will auto-refetch when inventory.id changes in the queryKey
     } catch (error) {
       console.error('Error loading inventory:', error);
     } finally {
@@ -106,8 +116,55 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         .insert(linesToInsert as any);
 
       if (insertError) throw insertError;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error initializing inventory lines:', error);
+      showToast('error', `Erreur lors de l'initialisation de l'inventaire: ${error.message}`);
+    }
+  }
+
+  async function syncInventoryLines(inventoryId: string): Promise<boolean> {
+    try {
+      // Get all active products
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id, stock_actuel')
+        .eq('actif', true) as { data: { id: string; stock_actuel: number | null }[] | null; error: any };
+
+      if (productsError) throw productsError;
+
+      // Get existing inventory line product IDs
+      const { data: existingLines, error: linesError } = await supabase
+        .from('lignes_inventaire')
+        .select('product_id')
+        .eq('inventaire_id', inventoryId) as { data: { product_id: string }[] | null; error: any };
+
+      if (linesError) throw linesError;
+
+      const existingProductIds = new Set((existingLines || []).map(l => l.product_id));
+
+      // Find products missing from the inventory
+      const missingProducts = (products || []).filter(p => !existingProductIds.has(p.id));
+
+      if (missingProducts.length > 0) {
+        const linesToInsert = missingProducts.map((product) => ({
+          inventaire_id: inventoryId,
+          product_id: product.id,
+          stock_theorique: product.stock_actuel || 0,
+          stock_physique: 0,
+          ecart: -(product.stock_actuel || 0),
+        }));
+
+        const { error: insertError } = await supabase
+          .from('lignes_inventaire')
+          .insert(linesToInsert as any);
+
+        if (insertError) throw insertError;
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error('Error syncing inventory lines:', error);
+      return false;
     }
   }
 
@@ -200,9 +257,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
       // Récupérer tous les produits (sans pagination)
       const { data: allLines, error } = await supabase
         .from('lignes_inventaire')
-        .select('*, product:products!inner(*)')
-        .eq('inventaire_id', inventory.id)
-        .order('product(nom)', { ascending: true });
+        .select('*, product:products(*)')
+        .eq('inventaire_id', inventory.id);
 
       if (error) {
         console.error('Erreur Supabase:', error);
@@ -214,27 +270,13 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
         return;
       }
 
-      console.log('Lignes récupérées:', allLines.length);
-
       // Créer le contenu HTML pour l'impression
       const printContent = generatePrintHTML(allLines);
       
       // Ouvrir une nouvelle fenêtre et imprimer
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        
-        // Attendre que le contenu soit rendu puis imprimer
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-      } else {
+      openPrintWindow(printContent, () => {
         showToast('error', 'Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez les popups bloqués.');
-      }
+      });
     } catch (error: any) {
       console.error('Erreur lors de l\'impression:', error);
       showToast('error', `Erreur lors de la génération du PDF: ${error.message}`);
@@ -246,13 +288,6 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
     const date = getMonthDate(selectedMonth);
     const monthYear = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const printDate = new Date().toLocaleDateString('fr-FR');
-    
-    // Fonction pour échapper le HTML
-    const escapeHtml = (text: string) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
     
     // Diviser les produits en 2 colonnes
     const halfLength = Math.ceil(allLines.length / 2);
@@ -499,7 +534,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             </p>
           </div>
           {/* Desktop: Primary action button (Valider) */}
-          {!isValidated && (
+          {!isValidated && !isReadOnly && (
             <button
               onClick={() => setShowValidateModal(true)}
               disabled={saving}
@@ -530,7 +565,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
             <Printer className="w-4 h-4 flex-shrink-0" />
             Imprimer (PDF)
           </button>
-          {!isValidated && (
+          {!isValidated && !isReadOnly && (
             <button
               onClick={saveInventory}
               disabled={saving}
@@ -578,16 +613,19 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                       <td className="py-3 px-4 text-xs text-slate-700 font-medium">{line.product?.nom}</td>
                       <td className="py-3 px-4 text-xs text-slate-700 text-right whitespace-nowrap">{formatNumber(stockTheorique)}</td>
                       <td className="py-3 px-4 text-right">
-                        {isValidated ? (
+                        {isValidated || isReadOnly ? (
                           <span className="text-xs text-slate-700">{formatNumber(stockPhysique)}</span>
                         ) : (
                           <input
                             type="number"
                             step="1"
                             min="0"
-                            value={stockPhysique}
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={stockPhysique || ''}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => updateLine(line.id, parseInt(e.target.value) || 0)}
-                            className="w-20 px-2 py-1 text-xs text-right border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-24 px-3 py-2 text-sm text-right border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         )}
                       </td>
@@ -632,7 +670,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                   
                   <div>
                     <div className="text-xs text-slate-500 mb-1">Physique</div>
-                    {isValidated ? (
+                    {isValidated || isReadOnly ? (
                       <div className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-lg px-2 py-1.5 text-center">
                         {formatNumber(stockPhysique)}
                       </div>
@@ -641,9 +679,12 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
                         type="number"
                         step="1"
                         min="0"
-                        value={stockPhysique}
+                        inputMode="numeric"
+                        placeholder="0"
+                        value={stockPhysique || ''}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => updateLine(line.id, parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-1.5 text-sm text-center font-medium bg-slate-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200"
+                        className="w-full px-3 py-2 text-sm text-center font-medium bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                       />
                     )}
                   </div>
@@ -703,7 +744,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
       />
 
       {/* Mobile: Bouton Sauvegarder sticky */}
-      {!isValidated && (
+      {!isValidated && !isReadOnly && (
         <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 p-3 shadow-lg z-40">
           <button
             onClick={saveInventory}

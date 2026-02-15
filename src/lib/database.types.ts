@@ -230,7 +230,7 @@ export interface Database {
           id: string
           nom: string
           email: string
-          role: 'ADMIN' | 'USER'
+          role: 'ADMIN' | 'USER' | 'LECTEUR'
           created_at: string | null
           updated_at: string | null
         }
@@ -238,7 +238,7 @@ export interface Database {
           id: string
           nom: string
           email?: string
-          role?: 'ADMIN' | 'USER'
+          role?: 'ADMIN' | 'USER' | 'LECTEUR'
           created_at?: string | null
           updated_at?: string | null
         }
@@ -246,7 +246,7 @@ export interface Database {
           id?: string
           nom?: string
           email?: string
-          role?: 'ADMIN' | 'USER'
+          role?: 'ADMIN' | 'USER' | 'LECTEUR'
           created_at?: string | null
           updated_at?: string | null
         }

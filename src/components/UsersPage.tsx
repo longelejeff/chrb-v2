@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import { Search, Plus, Edit2, X, Save, Trash2, AlertCircle } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 import type { Database } from '../lib/database.types';
+import { EmptyState } from './ui/EmptyState';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -12,7 +13,7 @@ interface UserFormData {
   nom: string;
   email: string;
   password: string;
-  role: 'ADMIN' | 'USER';
+  role: 'ADMIN' | 'USER' | 'LECTEUR';
 }
 
 export function UsersPage() {
@@ -228,6 +229,8 @@ export function UsersPage() {
                     <span className={`inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                       user.role === 'ADMIN' 
                         ? 'bg-purple-100 text-purple-700' 
+                        : user.role === 'LECTEUR'
+                        ? 'bg-slate-100 text-slate-700'
                         : 'bg-blue-100 text-blue-700'
                     }`}>
                       {user.role}
@@ -259,7 +262,7 @@ export function UsersPage() {
         </div>
 
         {filteredUsers.length === 0 && (
-          <div className="text-center py-8 text-slate-500">Aucun utilisateur trouvé</div>
+          <EmptyState message="Aucun utilisateur trouvé" />
         )}
       </div>
 
@@ -339,11 +342,12 @@ export function UsersPage() {
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'USER' })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'USER' | 'LECTEUR' })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="USER">Utilisateur</option>
                   <option value="ADMIN">Administrateur</option>
+                  <option value="LECTEUR">Lecteur (lecture seule)</option>
                 </select>
               </div>
 

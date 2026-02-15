@@ -11,6 +11,7 @@ interface ProductRow {
   actif: boolean | null;
   seuil_alerte: number | null;
   stock_actuel: number | null;
+  prix_unitaire: number | null;
   valeur_stock: number | null;
 }
 
@@ -26,6 +27,35 @@ interface LotMovementRow {
   quantite: number;
   lot_numero: string | null;
   date_peremption: string | null;
+}
+
+/** Compute lot-level stock from movement history (FEFO logic) */
+function calculateLotStocks(movements: LotMovementRow[]): Map<string, { stock: number; date_peremption: string | null; product_id: string }> {
+  const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
+
+  movements.forEach(movement => {
+    const key = `${movement.product_id}_${movement.lot_numero}`;
+
+    if (!lotStocks.has(key)) {
+      lotStocks.set(key, {
+        stock: 0,
+        date_peremption: movement.date_peremption || null,
+        product_id: movement.product_id,
+      });
+    }
+
+    const lot = lotStocks.get(key)!;
+    if (movement.type_mouvement === 'ENTREE') {
+      lot.stock += movement.quantite;
+      if (movement.date_peremption) {
+        lot.date_peremption = movement.date_peremption;
+      }
+    } else {
+      lot.stock -= movement.quantite;
+    }
+  });
+
+  return lotStocks;
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
@@ -49,13 +79,18 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       };
     }
 
-    const { products: rawProducts, movements: rawMovements, allMovementsWithLots: rawLotMovements } = data;
+    const { products: rawProducts, movements: rawMovements, allMovementsWithLots: rawLotMovements, latestPriceMap } = data;
     const products = rawProducts as unknown as ProductRow[];
     const movements = rawMovements as unknown as MovementRow[];
     const allMovementsWithLots = rawLotMovements as unknown as LotMovementRow[];
 
     const activeProducts = products.filter(p => p.actif);
-    const totalStockValue = activeProducts.reduce((sum, p) => sum + (p.valeur_stock || 0), 0);
+    // Compute stock value: use latest ENTREE prix_unitaire from movements,
+    // falling back to products.prix_unitaire if no movement price exists
+    const totalStockValue = activeProducts.reduce((sum, p) => {
+      const price = latestPriceMap[p.id] || p.prix_unitaire || 0;
+      return sum + (p.stock_actuel || 0) * price;
+    }, 0);
 
     const entries = movements.filter(m => m.type_mouvement === 'ENTREE');
     const exits = movements.filter(m => m.type_mouvement === 'SORTIE');
@@ -65,33 +100,8 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     const entriesQtyMonth = entries.reduce((sum, m) => sum + m.quantite, 0);
     const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
 
-    // Calculate lot stocks from movements (FEFO logic)
-    const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
-    
-    allMovementsWithLots.forEach(movement => {
-      const key = `${movement.product_id}_${movement.lot_numero}`;
-      
-      if (!lotStocks.has(key)) {
-        lotStocks.set(key, {
-          // @ts-ignore - Supabase type inference
-          stock: 0,
-          // @ts-ignore - Supabase type inference
-          date_peremption: movement.date_peremption || null,
-          // @ts-ignore - Supabase type inference
-          product_id: movement.product_id,
-        });
-      }
-      
-      const lot = lotStocks.get(key)!;
-      if (movement.type_mouvement === 'ENTREE') {
-        lot.stock += movement.quantite;
-        if (movement.date_peremption) {
-          lot.date_peremption = movement.date_peremption;
-        }
-      } else {
-        lot.stock -= movement.quantite;
-      }
-    });
+    // Calculate lot stocks from movements (FEFO logic) — shared utility
+    const lotStocks = calculateLotStocks(allMovementsWithLots);
 
     // Calculate expiration alerts from lots with stock > 0
     let expiringSoon = 0;
@@ -168,31 +178,8 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     const lowStock: any[] = [];
     const outOfStock: any[] = [];
 
-    // Calculate lot stocks from movements
-    const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
-    
-    const rawLotMovements = data.allMovementsWithLots as unknown as LotMovementRow[];
-    rawLotMovements?.forEach(movement => {
-      const key = `${movement.product_id}_${movement.lot_numero}`;
-      
-      if (!lotStocks.has(key)) {
-        lotStocks.set(key, {
-          stock: 0,
-          date_peremption: movement.date_peremption || null,
-          product_id: movement.product_id,
-        });
-      }
-      
-      const lot = lotStocks.get(key)!;
-      if (movement.type_mouvement === 'ENTREE') {
-        lot.stock += movement.quantite;
-        if (movement.date_peremption) {
-          lot.date_peremption = movement.date_peremption;
-        }
-      } else {
-        lot.stock -= movement.quantite;
-      }
-    });
+    // Calculate lot stocks from movements — shared utility
+    const lotStocks = calculateLotStocks(data.allMovementsWithLots as unknown as LotMovementRow[]);
 
     // Group lots by product and check expiry
     const productExpiryMap = new Map<string, { product: any; earliestExpiry: number; category: string }>();

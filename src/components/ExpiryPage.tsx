@@ -1,28 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Search, Trash2, AlertTriangle, X, Save } from 'lucide-react';
 import { formatDate, getDaysUntilExpiry, exportToCSV } from '../lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import ConfirmModal from './ConfirmModal';
 import type { Database } from '../lib/database.types';
+import { EmptyState } from './ui/EmptyState';
+import { PaginationControls } from './PaginationControls';
+import { useExpiries, useAllExpiries } from '../lib/hooks';
 
-type Expiry = Database['public']['Tables']['peremptions']['Row'];
 type Product = Database['public']['Tables']['products']['Row'];
-
-interface ExpiryWithProduct extends Expiry {
-  product?: Product;
-}
 
 export function ExpiryPage() {
   const { showToast } = useToast();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
-  const [expiries, setExpiries] = useState<ExpiryWithProduct[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const isReadOnly = profile?.role === 'LECTEUR';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'expired' | 'soon'>('all');
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const [showModal, setShowModal] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
   const [formData, setFormData] = useState({
     product_id: '',
@@ -31,10 +32,30 @@ export function ExpiryPage() {
     emplacement: '',
   });
 
-  useEffect(() => {
-    loadProducts();
-    loadExpiries();
-  }, []);
+  // React Query hooks
+  const { data: paginatedData, isLoading } = useExpiries({ page, pageSize, searchTerm, filterType });
+  const { data: allExpiries } = useAllExpiries();
+
+  const filteredExpiries = paginatedData?.data || [];
+  const totalPages = paginatedData?.pageCount || 1;
+  const totalItems = paginatedData?.total || 0;
+
+  // Counts from all expiries (not paginated)
+  const expiredCount = (allExpiries || []).filter(e => getDaysUntilExpiry(e.date_peremption) < 0).length;
+  const soonCount = (allExpiries || []).filter(e => {
+    const days = getDaysUntilExpiry(e.date_peremption);
+    return days >= 0 && days <= 30;
+  }).length;
+
+  // Reset page when search/filter changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+  const handleFilterChange = (value: 'all' | 'expired' | 'soon') => {
+    setFilterType(value);
+    setPage(1);
+  };
 
   async function loadProducts() {
     try {
@@ -48,24 +69,6 @@ export function ExpiryPage() {
       setProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
-    }
-  }
-
-  async function loadExpiries() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('peremptions')
-        .select('*, product:products(*)')
-        .gt('quantite', 0) // Only show lots with stock > 0
-        .order('date_peremption', { ascending: true });
-
-      if (error) throw error;
-      setExpiries(data as any || []);
-    } catch (error) {
-      console.error('Error loading expiries:', error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -86,9 +89,10 @@ export function ExpiryPage() {
         emplacement: '',
       });
       setShowModal(false);
-      loadExpiries();
       
-      // Invalidate dashboard cache to refresh expiry alerts
+      // Invalidate expiries and dashboard caches
+      await queryClient.invalidateQueries({ queryKey: ['expiries'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-expiries'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       
       showToast('success', 'Péremption ajoutée avec succès.');
@@ -105,9 +109,10 @@ export function ExpiryPage() {
         .eq('id', confirmDelete.id);
 
       if (error) throw error;
-      loadExpiries();
       
-      // Invalidate dashboard cache
+      // Invalidate expiries and dashboard caches
+      await queryClient.invalidateQueries({ queryKey: ['expiries'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-expiries'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       
       showToast('success', 'Péremption supprimée avec succès.');
@@ -117,7 +122,8 @@ export function ExpiryPage() {
   }
 
   function handleExport() {
-    const exportData = filteredExpiries.map(e => ({
+    // Export all expiries (not just current page)
+    const exportData = (allExpiries || []).map(e => ({
       produit: e.product?.nom || '',
       code: e.product?.code || '',
       date_peremption: formatDate(e.date_peremption),
@@ -127,33 +133,6 @@ export function ExpiryPage() {
     }));
     exportToCSV(exportData, 'peremptions');
   }
-
-  const filteredExpiries = expiries.filter(e => {
-    // Only show expiries with stock > 0
-    if (e.quantite <= 0) return false;
-    
-    const matchesSearch = e.product?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         e.product?.code.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const days = getDaysUntilExpiry(e.date_peremption);
-    let matchesFilter = true;
-
-    if (filterType === 'expired') {
-      matchesFilter = days < 0;
-    } else if (filterType === 'soon') {
-      matchesFilter = days >= 0 && days <= 30;
-    }
-
-    return matchesSearch && matchesFilter;
-  });
-
-  // Only count expiries with stock > 0
-  const expiredCount = expiries.filter(e => e.quantite > 0 && getDaysUntilExpiry(e.date_peremption) < 0).length;
-  const soonCount = expiries.filter(e => {
-    if (e.quantite <= 0) return false;
-    const days = getDaysUntilExpiry(e.date_peremption);
-    return days >= 0 && days <= 30;
-  }).length;
 
   function getExpiryStatus(expiryDate: string) {
     const days = getDaysUntilExpiry(expiryDate);
@@ -167,7 +146,7 @@ export function ExpiryPage() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
@@ -176,14 +155,16 @@ export function ExpiryPage() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Gestion des Péremptions</h2>
+          {!isReadOnly && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { loadProducts(); setShowModal(true); }}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
           >
             <Plus className="w-4 h-4 flex-shrink-0" />
             <span className="hidden sm:inline">Ajouter</span>
             <span className="sm:hidden">Nouveau</span>
           </button>
+          )}
         </div>
         <button
           onClick={handleExport}
@@ -198,7 +179,7 @@ export function ExpiryPage() {
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-xs sm:text-sm text-slate-600">Total</p>
-              <p className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">{expiries.length}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">{(allExpiries || []).length}</p>
             </div>
             <div className="bg-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
               <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
@@ -239,13 +220,13 @@ export function ExpiryPage() {
               type="text"
               placeholder="Rechercher un produit..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => handleFilterChange(e.target.value as any)}
             className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm flex-shrink-0"
           >
             <option value="all">Tous</option>
@@ -287,6 +268,7 @@ export function ExpiryPage() {
                         </span>
                       </td>
                       <td className="py-3 px-3 sm:px-4 text-right">
+                        {!isReadOnly && (
                         <button
                           onClick={() => setConfirmDelete({ show: true, id: expiry.id })}
                           className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -294,6 +276,7 @@ export function ExpiryPage() {
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -302,9 +285,19 @@ export function ExpiryPage() {
             </table>
           </div>
           {filteredExpiries.length === 0 && (
-            <div className="text-center py-8 text-slate-500">Aucune péremption trouvée</div>
+            <EmptyState message="Aucune péremption trouvée" />
           )}
         </div>
+
+        {totalPages > 1 && (
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       {showModal && (

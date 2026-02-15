@@ -144,36 +144,79 @@ export function useAllMovements({ searchTerm = '', month, typeFilter, productFil
   });
 }
 
-// Expiries hook
-export function useExpiries({ page, pageSize, searchTerm = '' }: PaginationParams) {
+// Expiries hook (peremptions table)
+export function useExpiries({ page, pageSize, searchTerm = '', filterType = 'all' }: PaginationParams & { filterType?: string }) {
   return useQuery({
-    queryKey: ['expiries', page, pageSize, searchTerm],
+    queryKey: ['expiries', page, pageSize, searchTerm, filterType],
     queryFn: async (): Promise<PaginatedResponse<any>> => {
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
-
+      // Fetch all peremptions with stock > 0 (need client-side search/filter like inventory)
       let query = supabase
-        .from('mouvements')
-        .select('*, product:products(*)', { count: 'exact' })
-        .not('date_peremption', 'is', null)
+        .from('peremptions')
+        .select('*, product:products(*)')
+        .gt('quantite', 0)
         .order('date_peremption', { ascending: true });
 
-      if (searchTerm) {
-        query = query.or(
-          `product.nom.ilike.%${searchTerm}%,product.code.ilike.%${searchTerm}%`
-        );
-      }
-
-      const { data, error, count } = await query.range(start, end);
+      const { data, error } = await query;
 
       if (error) throw error;
 
+      let filtered = (data || []).filter((e: any) => e.product);
+
+      // Client-side search
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter((e: any) => {
+          const nom = (e.product?.nom || '').toLowerCase();
+          const code = (e.product?.code || '').toLowerCase();
+          return nom.includes(term) || code.includes(term);
+        });
+      }
+
+      // Client-side filter by expiry status
+      if (filterType === 'expired') {
+        filtered = filtered.filter((e: any) => {
+          const days = Math.ceil((new Date(e.date_peremption).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return days < 0;
+        });
+      } else if (filterType === 'soon') {
+        filtered = filtered.filter((e: any) => {
+          const days = Math.ceil((new Date(e.date_peremption).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return days >= 0 && days <= 30;
+        });
+      }
+
+      // Client-side pagination
+      const total = filtered.length;
+      const start = (page - 1) * pageSize;
+      const paginated = filtered.slice(start, start + pageSize);
+
       return {
-        data: data || [],
-        total: count || 0,
-        pageCount: Math.ceil((count || 0) / pageSize),
+        data: paginated,
+        total,
+        pageCount: Math.ceil(total / pageSize),
       };
     },
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}
+
+// All expiries hook (for counts, no pagination)
+export function useAllExpiries() {
+  return useQuery({
+    queryKey: ['all-expiries'],
+    queryFn: async (): Promise<any[]> => {
+      const { data, error } = await supabase
+        .from('peremptions')
+        .select('*, product:products(*)')
+        .gt('quantite', 0)
+        .order('date_peremption', { ascending: true });
+
+      if (error) throw error;
+      return (data || []).filter((e: any) => e.product);
+    },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
@@ -222,29 +265,46 @@ export function useInventoryLines({ page, pageSize, searchTerm = '', inventoryId
     queryKey: ['inventory-lines', page, pageSize, searchTerm, inventoryId],
     enabled: !!inventoryId,
     queryFn: async (): Promise<PaginatedResponse<any>> => {
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
-
+      // Fetch ALL lines for this inventory (no server-side pagination)
+      // because we need to search/sort on product name client-side
       let query = supabase
         .from('lignes_inventaire')
-        .select('*, product:products(*)', { count: 'exact' })
-        .eq('inventaire_id', inventoryId!)
-        .order('product(nom)');
+        .select('*, product:products(*)')
+        .eq('inventaire_id', inventoryId!);
 
-      if (searchTerm) {
-        query = query.or(
-          `product.nom.ilike.%${searchTerm}%,product.code.ilike.%${searchTerm}%`
-        );
-      }
-
-      const { data, error, count } = await query.range(start, end);
+      const { data, error } = await query;
 
       if (error) throw error;
 
+      // Filter out lines where product join failed (shouldn't happen but safety)
+      let filtered = (data || []).filter((line: any) => line.product);
+
+      // Client-side search on product name/code
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter((line: any) => {
+          const nom = (line.product?.nom || '').toLowerCase();
+          const code = (line.product?.code || '').toLowerCase();
+          return nom.includes(term) || code.includes(term);
+        });
+      }
+
+      // Sort by product name alphabetically
+      filtered.sort((a: any, b: any) => {
+        const nameA = (a.product?.nom || '').toLowerCase();
+        const nameB = (b.product?.nom || '').toLowerCase();
+        return nameA.localeCompare(nameB, 'fr');
+      });
+
+      // Client-side pagination
+      const total = filtered.length;
+      const start = (page - 1) * pageSize;
+      const paginated = filtered.slice(start, start + pageSize);
+
       return {
-        data: data || [],
-        total: count || 0,
-        pageCount: Math.ceil((count || 0) / pageSize),
+        data: paginated,
+        total,
+        pageCount: Math.ceil(total / pageSize),
       };
     },
   });
@@ -298,8 +358,9 @@ export function useDashboard(selectedMonth: string) {
         movementsResponse,
         recentMovementsResponse,
         allMovementsWithLotsResponse,
+        latestPricesResponse,
       ] = await Promise.all([
-        supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, valeur_stock').order('valeur_stock', { ascending: false }),
+        supabase.from('products').select('id, code, nom, actif, seuil_alerte, stock_actuel, prix_unitaire, valeur_stock').order('nom'),
         supabase.from('mouvements')
           .select('type_mouvement, quantite, valeur_totale')
           .not('date_mouvement', 'is', null)
@@ -309,27 +370,93 @@ export function useDashboard(selectedMonth: string) {
           .select('id, type_mouvement, quantite, date_mouvement, lot_numero, product:products(nom, code)')
           .order('created_at', { ascending: false })
           .limit(7),
-        // Get all movements with lot info to calculate current lot stocks
+        // Get movements with lot info to calculate current lot stocks
+        // Bound: only lots with peremption date within 1 year old (not expired > 1 year ago)
+        (() => {
+          const oneYearAgo = new Date();
+          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+          const cutoffDate = oneYearAgo.toISOString().split('T')[0];
+          return supabase.from('mouvements')
+            .select('product_id, type_mouvement, quantite, lot_numero, date_peremption')
+            .not('lot_numero', 'is', null)
+            .not('date_peremption', 'is', null)
+            .gte('date_peremption', cutoffDate)
+            .order('created_at', { ascending: true });
+        })(),
+        // Latest prix_unitaire per product from ENTREE movements
         supabase.from('mouvements')
-          .select('product_id, type_mouvement, quantite, lot_numero, date_peremption')
-          .not('lot_numero', 'is', null)
-          .not('date_peremption', 'is', null)
-          .order('created_at', { ascending: true }),
+          .select('product_id, prix_unitaire')
+          .eq('type_mouvement', 'ENTREE')
+          .gt('prix_unitaire', 0)
+          .order('created_at', { ascending: false }),
       ]);
 
       if (productsResponse.error) throw productsResponse.error;
       if (movementsResponse.error) throw movementsResponse.error;
       if (recentMovementsResponse.error) throw recentMovementsResponse.error;
       if (allMovementsWithLotsResponse.error) throw allMovementsWithLotsResponse.error;
+      // latestPricesResponse is non-critical — don't throw on error
+
+      // Build a map of product_id -> latest prix_unitaire from ENTREE movements
+      const latestPriceMap: Record<string, number> = {};
+      if (!latestPricesResponse.error && latestPricesResponse.data) {
+        for (const row of latestPricesResponse.data) {
+          // First occurrence per product_id is the most recent (ordered desc)
+          if (row.product_id && !(row.product_id in latestPriceMap)) {
+            latestPriceMap[row.product_id] = row.prix_unitaire;
+          }
+        }
+      }
 
       return {
         products: productsResponse.data || [],
         movements: movementsResponse.data || [],
         recentMovements: recentMovementsResponse.data || [],
         allMovementsWithLots: allMovementsWithLotsResponse.data || [],
+        latestPriceMap,
       };
     },
     staleTime: 0, // Always refetch when cache is invalidated
     refetchOnMount: true,
+  });
+}
+
+// Sidebar alerts hook — lightweight counts for badge display
+export function useSidebarAlerts() {
+  return useQuery({
+    queryKey: ['sidebar-alerts'],
+    queryFn: async () => {
+      const [expiryRes, productsRes] = await Promise.all([
+        // Count expiries with stock > 0 and date_peremption within 30 days or past
+        supabase.from('peremptions')
+          .select('date_peremption, quantite')
+          .gt('quantite', 0),
+        // Products with low stock or out of stock
+        supabase.from('products')
+          .select('stock_actuel, seuil_alerte')
+          .eq('actif', true),
+      ]);
+
+      let expiryAlerts = 0;
+      if (!expiryRes.error && expiryRes.data) {
+        const now = Date.now();
+        expiryAlerts = expiryRes.data.filter(e => {
+          const days = Math.ceil((new Date(e.date_peremption).getTime() - now) / (1000 * 60 * 60 * 24));
+          return days <= 30;
+        }).length;
+      }
+
+      let stockAlerts = 0;
+      if (!productsRes.error && productsRes.data) {
+        stockAlerts = productsRes.data.filter(p => {
+          const stock = p.stock_actuel || 0;
+          return stock === 0 || (stock > 0 && stock <= (p.seuil_alerte || 0));
+        }).length;
+      }
+
+      return { expiryAlerts, stockAlerts };
+    },
+    staleTime: 60_000, // Refresh every minute
+    refetchInterval: 60_000,
   });
 }

@@ -2,25 +2,31 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Plus, Search, Upload, Trash2, Printer, Download } from 'lucide-react';
+import { Plus, Upload, Trash2, Printer, Download, Edit2 } from 'lucide-react';
 import { formatDate, formatNumber, exportToCSV, formatCurrency, formatMonth, getMonthFromDate, getMonthDate } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 import { PaginationControls } from './PaginationControls';
 import { useMovements, useAllMovements } from '../lib/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Database } from '../lib/database.types';
+import { openPrintWindow, escapeHtml } from '../lib/printUtils';
+import { EmptyState } from './ui/EmptyState';
+import { FAB } from './ui/FAB';
+import { SearchBar } from './ui/SearchBar';
 
 type Product = Database['public']['Tables']['products']['Row'];
 
 export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const isReadOnly = profile?.role === 'LECTEUR';
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [productFilter, setProductFilter] = useState<string>(''); // New: filter by specific product
   const [showForm, setShowForm] = useState(false);
+  const [editingMovement, setEditingMovement] = useState<any>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
   const [printMode, setPrintMode] = useState<'current' | 'all' | null>(null);
   
@@ -243,6 +249,54 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     }
   }
 
+  function handleEdit(movement: any) {
+    const expiryDate = movement.date_peremption ? movement.date_peremption.split('T')[0] : '';
+    setFormData({
+      product_id: movement.product_id,
+      type_mouvement: movement.type_mouvement,
+      quantite: movement.quantite,
+      date_mouvement: movement.date_mouvement?.split('T')[0] || new Date().toISOString().split('T')[0],
+      note: movement.note || '',
+      prix_unitaire: movement.prix_unitaire || 0,
+      lot_numero: movement.lot_numero || '',
+      date_peremption: expiryDate,
+      fournisseur: movement.fournisseur || '',
+      date_reception: movement.date_reception?.split('T')[0] || new Date().toISOString().split('T')[0],
+    });
+    setEditingMovement(movement);
+    setShowForm(true);
+
+    // Load lots if SORTIE
+    if (movement.type_mouvement === 'SORTIE' && movement.product_id) {
+      loadAvailableLots(movement.product_id).then(() => {
+        if (movement.lot_numero) {
+          setSelectedLot(movement.lot_numero);
+        }
+      });
+    }
+  }
+
+  function resetForm() {
+    setFormData({
+      product_id: '',
+      type_mouvement: 'ENTREE',
+      quantite: 0,
+      date_mouvement: new Date().toISOString().split('T')[0],
+      note: '',
+      prix_unitaire: 0,
+      lot_numero: '',
+      date_peremption: '',
+      fournisseur: '',
+      date_reception: new Date().toISOString().split('T')[0],
+    });
+    setEditingMovement(null);
+    setSelectedLot('');
+    setLotDetails(null);
+    setQuantityError('');
+    setAvailableLots([]);
+    setShowForm(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
@@ -251,67 +305,112 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       const product = products.find(p => p.id === formData.product_id);
       if (!product) throw new Error('Produit introuvable');
 
-      const currentStock = product.stock_actuel || 0;
-      let newStock = currentStock;
-
-      // Simple calculation: ENTREE adds, SORTIE subtracts
-      if (formData.type_mouvement === 'ENTREE') {
-        newStock = currentStock + formData.quantite;
-      } else if (formData.type_mouvement === 'SORTIE') {
-        newStock = currentStock - formData.quantite;
-      }
-
       const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
 
-      // Prepare movement data
-      const movementData = {
-        product_id: formData.product_id,
-        type_mouvement: formData.type_mouvement,
-        quantite: formData.quantite,
-        date_mouvement: formData.date_mouvement,
-        note: formData.note,
-        prix_unitaire: formData.prix_unitaire,
-        lot_numero: formData.lot_numero || null,
-        date_peremption: formData.date_peremption || null,
-        mois: getMonthFromDate(formData.date_mouvement),
-        created_by: user.id,
-        valeur_totale,
-        solde_apres: newStock,
-      };
+      if (editingMovement) {
+        // EDIT MODE: update the row in place, then recalculate stock from all movements
+        const movementUpdate = {
+          product_id: formData.product_id,
+          type_mouvement: formData.type_mouvement,
+          quantite: formData.quantite,
+          date_mouvement: formData.date_mouvement,
+          note: formData.note,
+          prix_unitaire: formData.prix_unitaire,
+          lot_numero: formData.lot_numero || null,
+          date_peremption: formData.date_peremption || null,
+          mois: getMonthFromDate(formData.date_mouvement),
+          valeur_totale,
+        };
 
-      const { error: movementError } = await supabase
-        .from('mouvements')
-        .insert([movementData] as any);
+        const { data: updatedRows, error: updateError } = await (supabase
+          .from('mouvements') as any)
+          .update(movementUpdate)
+          .eq('id', editingMovement.id)
+          .select();
 
-      if (movementError) throw movementError;
+        if (updateError) throw updateError;
+        if (!updatedRows || updatedRows.length === 0) {
+          throw new Error('Impossible de modifier ce mouvement. Vérifiez les politiques RLS dans Supabase (UPDATE sur mouvements).');
+        }
 
-      // stock_actuel is auto-updated by DB trigger, valeur_stock is a generated column
-      // No need to manually update the product
+        // If product changed, recalculate old product's stock too
+        const oldProductId = editingMovement.product_id;
+        if (oldProductId && oldProductId !== formData.product_id) {
+          const { data: oldMoves } = await supabase
+            .from('mouvements')
+            .select('type_mouvement, quantite')
+            .eq('product_id', oldProductId);
+          const oldStock = (oldMoves || []).reduce((s: number, m: any) =>
+            m.type_mouvement === 'ENTREE' ? s + m.quantite : s - m.quantite, 0);
+          await (supabase.from('products') as any)
+            .update({ stock_actuel: oldStock })
+            .eq('id', oldProductId);
+        }
 
-      showToast('success', `Mouvement enregistré avec succès — stock restant: ${newStock} unités.`);
+        // Recalculate stock from ALL movements for this product
+        const { data: allMoves } = await supabase
+          .from('mouvements')
+          .select('type_mouvement, quantite')
+          .eq('product_id', formData.product_id);
+
+        const recalcStock = (allMoves || []).reduce((sum: number, m: any) => {
+          return m.type_mouvement === 'ENTREE' ? sum + m.quantite : sum - m.quantite;
+        }, 0);
+
+        // Update product stock and the movement's solde_apres
+        await (supabase.from('products') as any)
+          .update({ stock_actuel: recalcStock })
+          .eq('id', formData.product_id);
+
+        await (supabase.from('mouvements') as any)
+          .update({ solde_apres: recalcStock })
+          .eq('id', editingMovement.id);
+
+        showToast('success', `Mouvement modifié avec succès — stock: ${recalcStock} unités.`);
+      } else {
+        // CREATE MODE
+        const currentStock = product.stock_actuel || 0;
+        const newStock = formData.type_mouvement === 'ENTREE'
+          ? currentStock + formData.quantite
+          : currentStock - formData.quantite;
+
+        const movementData = {
+          product_id: formData.product_id,
+          type_mouvement: formData.type_mouvement,
+          quantite: formData.quantite,
+          date_mouvement: formData.date_mouvement,
+          note: formData.note,
+          prix_unitaire: formData.prix_unitaire,
+          lot_numero: formData.lot_numero || null,
+          date_peremption: formData.date_peremption || null,
+          mois: getMonthFromDate(formData.date_mouvement),
+          created_by: user.id,
+          valeur_totale,
+          solde_apres: newStock,
+        };
+
+        const { error: movementError } = await supabase
+          .from('mouvements')
+          .insert([movementData] as any);
+
+        if (movementError) throw movementError;
+
+        showToast('success', `Mouvement enregistré avec succès — stock restant: ${newStock} unités.`);
+      }
+
+      // Sync products.prix_unitaire on ENTREE so stock value stays accurate
+      if (formData.type_mouvement === 'ENTREE' && formData.prix_unitaire > 0) {
+        await (supabase.from('products') as any)
+          .update({ prix_unitaire: formData.prix_unitaire })
+          .eq('id', formData.product_id);
+      }
 
       // Invalidate all related caches to trigger automatic refresh
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       await queryClient.invalidateQueries({ queryKey: ['products'] });
       await queryClient.invalidateQueries({ queryKey: ['movements'] });
 
-      setFormData({
-        product_id: '',
-        type_mouvement: 'ENTREE',
-        quantite: 0,
-        date_mouvement: new Date().toISOString().split('T')[0],
-        note: '',
-        prix_unitaire: 0,
-        lot_numero: '',
-        date_peremption: '',
-        fournisseur: '',
-        date_reception: new Date().toISOString().split('T')[0],
-      });
-      setSelectedLot('');
-      setLotDetails(null);
-      setQuantityError('');
-      setAvailableLots([]);
-      setShowForm(false);
+      resetForm();
       refetch();
       loadProducts();
     } catch (error: any) {
@@ -323,15 +422,41 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     if (!confirmDelete.id) return;
 
     try {
-      // Delete the movement — DB trigger will auto-update product stock_actuel
-      const { error: deleteError } = await supabase
+      // First get the movement so we know the product_id for stock recalc
+      const { data: movToDelete } = await supabase
         .from('mouvements')
+        .select('product_id')
+        .eq('id', confirmDelete.id)
+        .single();
+
+      const productIdToRecalc = movToDelete?.product_id;
+
+      const { data: deletedRows, error: deleteError } = await (supabase
+        .from('mouvements') as any)
         .delete()
-        .eq('id', confirmDelete.id);
+        .eq('id', confirmDelete.id)
+        .select();
 
       if (deleteError) throw deleteError;
+      if (!deletedRows || deletedRows.length === 0) {
+        throw new Error('Impossible de supprimer ce mouvement. Vérifiez les politiques RLS dans Supabase (DELETE sur mouvements).');
+      }
 
-      // stock_actuel is auto-updated by DB trigger, valeur_stock is a generated column
+      // Recalculate stock from remaining movements for this product
+      if (productIdToRecalc) {
+        const { data: remainingMoves } = await supabase
+          .from('mouvements')
+          .select('type_mouvement, quantite')
+          .eq('product_id', productIdToRecalc);
+
+        const recalcStock = (remainingMoves || []).reduce((sum: number, m: any) => {
+          return m.type_mouvement === 'ENTREE' ? sum + m.quantite : sum - m.quantite;
+        }, 0);
+
+        await (supabase.from('products') as any)
+          .update({ stock_actuel: recalcStock })
+          .eq('id', productIdToRecalc);
+      }
 
       showToast('success', 'Mouvement supprimé avec succès.');
       
@@ -389,27 +514,13 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         return;
       }
 
-      console.log('Mouvements récupérés:', allMovements.length);
-
       // Créer le contenu HTML pour l'impression
       const printContent = generateMovementsPrintHTML(allMovements);
       
       // Ouvrir une nouvelle fenêtre et imprimer
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        
-        // Attendre que le contenu soit rendu puis imprimer
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-      } else {
+      openPrintWindow(printContent, () => {
         showToast('error', 'Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez les popups bloqués.');
-      }
+      });
     } catch (error: any) {
       console.error('Erreur lors de l\'impression:', error);
       showToast('error', `Erreur lors de la génération du PDF: ${error.message}`);
@@ -422,13 +533,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     const monthYear = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const printDate = new Date().toLocaleDateString('fr-FR');
     
-    // Fonction pour échapper le HTML
-    const escapeHtml = (text: string) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
-
     const generateRows = () => allMovements.map((movement: any) => {
       const productName = escapeHtml(movement.product?.nom || 'Produit inconnu');
       const lotNumero = movement.lot_numero ? escapeHtml(movement.lot_numero) : '-';
@@ -596,14 +700,16 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
           <h2 className="text-lg sm:text-2xl font-bold text-slate-800 print:hidden">Mouvements de Stock</h2>
           {/* Desktop: Primary action button */}
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm print:hidden"
-            aria-label="Créer un nouveau mouvement de stock"
-          >
+          {!isReadOnly && (
+            <button
+              onClick={() => { resetForm(); setShowForm(!showForm); }}
+              className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm print:hidden"
+              aria-label="Créer un nouveau mouvement de stock"
+            >
             <Plus className="w-4 h-4 flex-shrink-0" />
             Nouveau Mouvement
           </button>
+          )}
         </div>
 
         {/* Desktop: Secondary actions in row */}
@@ -651,9 +757,11 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
       </div>
 
-      {showForm && (
+      {showForm && !isReadOnly && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Nouveau Mouvement</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            {editingMovement ? 'Modifier le Mouvement' : 'Nouveau Mouvement'}
+          </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
@@ -664,7 +772,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   required
                   value={formData.product_id}
                   onChange={(e) => handleProductChange(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value="">Sélectionner un produit</option>
                   {products.map((p) => (
@@ -683,7 +791,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   required
                   value={formData.type_mouvement}
                   onChange={(e) => handleTypeChange(e.target.value as 'ENTREE' | 'SORTIE')}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value="ENTREE">Entrée (Stock In)</option>
                   <option value="SORTIE">Sortie (Stock Out)</option>
@@ -699,9 +807,12 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   required
                   step="1"
                   min="1"
-                  value={formData.quantite}
+                  inputMode="numeric"
+                  placeholder="Ex: 100"
+                  value={formData.quantite || ''}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 0)}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
@@ -714,10 +825,15 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   required
                   step="0.01"
                   min="0"
-                  value={formData.prix_unitaire}
+                  inputMode="decimal"
+                  placeholder="Ex: 25.00"
+                  value={formData.prix_unitaire || ''}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) || 0 })}
                   readOnly={formData.type_mouvement === 'SORTIE'}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base disabled:bg-slate-50 disabled:text-slate-500"
+                  className={`w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
+                    formData.type_mouvement === 'SORTIE' ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''
+                  }`}
                 />
               </div>
 
@@ -730,7 +846,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   required
                   value={formData.date_mouvement}
                   onChange={(e) => setFormData({ ...formData, date_mouvement: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
@@ -749,7 +865,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       required
                       value={formData.lot_numero}
                       onChange={(e) => handleLotChange(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     >
                       <option value="">Choisir un lot (FEFO)</option>
                       {availableLots.map((lot) => (
@@ -795,7 +911,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                     required
                     value={formData.date_peremption}
                     readOnly
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed text-sm sm:text-base"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed text-sm sm:text-base"
                     title="Date de péremption du lot sélectionné (lecture seule)"
                   />
                 </div>
@@ -813,7 +929,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       required
                       value={formData.lot_numero}
                       onChange={(e) => setFormData({ ...formData, lot_numero: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="Ex: LOT-2025-001"
                     />
                   </div>
@@ -827,7 +943,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       required
                       value={formData.date_peremption}
                       onChange={(e) => setFormData({ ...formData, date_peremption: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     />
                   </div>
 
@@ -839,7 +955,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       type="text"
                       value={formData.fournisseur}
                       onChange={(e) => setFormData({ ...formData, fournisseur: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="Nom du fournisseur"
                     />
                   </div>
@@ -852,7 +968,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       type="date"
                       value={formData.date_reception}
                       onChange={(e) => setFormData({ ...formData, date_reception: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                      className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     />
                   </div>
                 </>
@@ -873,7 +989,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                   type="text"
                   value={formData.note}
                   onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   placeholder="Note optionnelle..."
                 />
               </div>
@@ -882,16 +998,17 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
             <div className="flex flex-col-reverse sm:flex-row gap-3">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={resetForm}
                 className="w-full sm:w-auto px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium text-sm sm:text-base"
               >
                 Annuler
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
+                disabled={formData.type_mouvement === 'SORTIE' && formData.product_id !== '' && !isLoadingLots && availableLots.length === 0}
+                className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
               >
-                Enregistrer
+                {editingMovement ? 'Modifier' : 'Enregistrer'}
               </button>
             </div>
           </form>
@@ -913,16 +1030,11 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
         <div className="flex flex-col gap-2 mb-3 sm:mb-4">
           {/* Champ de recherche - Style uniforme */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Rechercher un produit..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200"
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Rechercher un produit..."
+          />
           
           {/* Filtres - Style moderne */}
           <div className="flex flex-col sm:flex-row gap-2">
@@ -996,13 +1108,24 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                       <td className="py-3 px-4 text-xs text-slate-600 text-right whitespace-nowrap">{formatCurrency(movement.prix_unitaire)}</td>
                       <td className="py-3 px-4 text-xs text-slate-700 text-right font-medium whitespace-nowrap">{formatNumber(movement.solde_apres)}</td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
+                        {!isReadOnly && (
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(movement)}
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit2 className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete({ show: true, id: movement.id })}
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1025,13 +1148,24 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
                     {movement.type_mouvement === 'ENTREE' ? '↑ ENTRÉE' : '↓ SORTIE'}
                   </span>
                 </div>
-                <button
-                  onClick={() => setConfirmDelete({ show: true, id: movement.id })}
-                  className="p-1.5 hover:bg-red-50 rounded-lg transition-all duration-200 flex-shrink-0"
-                  title="Supprimer"
-                >
-                  <Trash2 className="w-4 h-4 text-red-600" />
-                </button>
+                {!isReadOnly && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleEdit(movement)}
+                    className="p-1.5 hover:bg-blue-50 rounded-lg transition-all duration-200 flex-shrink-0"
+                    title="Modifier"
+                  >
+                    <Edit2 className="w-4 h-4 text-blue-600" />
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete({ show: true, id: movement.id })}
+                    className="p-1.5 hover:bg-red-50 rounded-lg transition-all duration-200 flex-shrink-0"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
+                )}
               </div>
               
               <div className="mb-2">
@@ -1067,7 +1201,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         </div>
 
         {movements.length === 0 && (
-          <div className="text-center py-8 text-slate-500 text-sm">Aucun mouvement trouvé</div>
+          <EmptyState message="Aucun mouvement trouvé" />
         )}
           
         <div className="print:hidden">
@@ -1094,13 +1228,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       />
 
       {/* Mobile: FAB - Bouton flottant rond */}
-      <button
-        onClick={() => setShowForm(!showForm)}
-        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 z-40 hover:scale-110 print:hidden"
-        aria-label="Créer un nouveau mouvement de stock"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {!isReadOnly && <FAB onClick={() => { resetForm(); setShowForm(true); }} label="Créer un nouveau mouvement de stock" />}
     </div>
   );
 }

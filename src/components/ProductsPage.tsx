@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Search, Plus, Upload, Edit2, X, Save, Power, PowerOff, FileText, AlertCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Plus, Upload, Edit2, X, Save, Power, PowerOff, FileText, AlertCircle } from 'lucide-react';
 import { exportToCSV, formatCurrency } from '../lib/utils';
 import { generateProductCode, normalizeProductCode, generateUniqueCode } from '../lib/codeGenerator';
 import { PaginationControls } from './PaginationControls';
 import { useProducts } from '../lib/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Database } from '../lib/database.types';
+import { EmptyState } from './ui/EmptyState';
+import { FAB } from './ui/FAB';
+import { SearchBar } from './ui/SearchBar';
 
 type Product = Database['public']['Tables']['products']['Row'];
 
@@ -26,7 +30,9 @@ interface QuickImportPreview {
 
 export function ProductsPage() {
   const { showToast } = useToast();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const isReadOnly = profile?.role === 'LECTEUR';
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showQuickImport, setShowQuickImport] = useState(false);
@@ -412,6 +418,7 @@ export function ProductsPage() {
             <p className="text-xs sm:text-sm text-slate-600 mt-1">Gestion du catalogue</p>
           </div>
           {/* Desktop: Primary action button */}
+          {!isReadOnly && (
           <button
             onClick={() => openModal()}
             className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex-shrink-0"
@@ -420,31 +427,36 @@ export function ProductsPage() {
             <Plus className="w-4 h-4 flex-shrink-0" />
             Nouveau Produit
           </button>
+          )}
         </div>
 
         {/* Desktop: Secondary actions in 3-column grid */}
-        <div className="hidden sm:grid grid-cols-3 gap-2">
-          <button
-            onClick={() => setShowQuickImport(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
-            aria-label="Import rapide de produits"
-          >
-            <FileText className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">Import Rapide</span>
-          </button>
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept=".csv,.txt"
-              onChange={handleImportCSV}
-              className="hidden"
-              aria-label="Importer un fichier CSV"
-            />
-            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-              <Upload className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">Importer CSV</span>
-            </div>
-          </label>
+        <div className="hidden sm:flex gap-2">
+          {!isReadOnly && (
+          <>
+            <button
+              onClick={() => setShowQuickImport(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+              aria-label="Import rapide de produits"
+            >
+              <FileText className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Import Rapide</span>
+            </button>
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept=".csv,.txt"
+                onChange={handleImportCSV}
+                className="hidden"
+                aria-label="Importer un fichier CSV"
+              />
+              <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                <Upload className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Importer CSV</span>
+              </div>
+            </label>
+          </>
+          )}
           <button
             onClick={handleExport}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
@@ -458,16 +470,11 @@ export function ProductsPage() {
 
       <div className="bg-white rounded-xl shadow-sm border-0 p-2 sm:p-4 transition-all duration-200">
         {/* Barre de recherche compacte */}
-        <div className="relative mb-3 sm:mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-50 border-0 rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm transition-all duration-200"
-          />
-        </div>
+        <SearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+          className="mb-3 sm:mb-4"
+        />
 
         {/* Vue Desktop - Table */}
         <div className="hidden sm:block overflow-x-auto">
@@ -497,7 +504,7 @@ export function ProductsPage() {
                     </td>
                     <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{product.stock_actuel || 0}</td>
                     <td className="hidden sm:table-cell py-3 px-4 text-sm text-slate-700 text-right">{formatCurrency(product.prix_unitaire)}</td>
-                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{formatCurrency(product.valeur_stock)}</td>
+                    <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-slate-700 text-right font-medium">{formatCurrency((product.stock_actuel || 0) * (product.prix_unitaire || 0))}</td>
                     <td className="hidden md:table-cell py-3 px-4">
                       {product.actif ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
@@ -511,20 +518,24 @@ export function ProductsPage() {
                     </td>
                     <td className="py-3 px-3 sm:px-4 text-right">
                       <div className="flex justify-end gap-1 sm:gap-2">
-                        <button
-                          onClick={() => toggleActive(product)}
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                          title={product.actif ? 'Désactiver' : 'Activer'}
-                        >
-                          {product.actif ? <PowerOff className="w-4 h-4 text-slate-600" /> : <Power className="w-4 h-4 text-slate-600" />}
-                        </button>
-                        <button
-                          onClick={() => openModal(product)}
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit2 className="w-4 h-4 text-blue-600" />
-                        </button>
+                        {!isReadOnly && (
+                        <>
+                          <button
+                            onClick={() => toggleActive(product)}
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title={product.actif ? 'Désactiver' : 'Activer'}
+                          >
+                            {product.actif ? <PowerOff className="w-4 h-4 text-slate-600" /> : <Power className="w-4 h-4 text-slate-600" />}
+                          </button>
+                          <button
+                            onClick={() => openModal(product)}
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit2 className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -532,7 +543,7 @@ export function ProductsPage() {
               </tbody>
             </table>
             {products.length === 0 && (
-              <div className="text-center py-8 text-slate-500">Aucun produit trouvé</div>
+              <EmptyState message="Aucun produit trouvé" />
             )}
           </div>
 
@@ -557,6 +568,7 @@ export function ProductsPage() {
                     </span>
                   )}
                 </div>
+                {!isReadOnly && (
                 <div className="flex gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => toggleActive(product)}
@@ -573,6 +585,7 @@ export function ProductsPage() {
                     <Edit2 className="w-4 h-4 text-blue-600" />
                   </button>
                 </div>
+                )}
               </div>
               
               {/* Statistiques */}
@@ -583,13 +596,13 @@ export function ProductsPage() {
                 </div>
                 <div className="text-xs">
                   <span className="text-slate-500">Valeur:</span>
-                  <span className="ml-1 font-semibold text-slate-800">{formatCurrency(product.valeur_stock)}</span>
+                  <span className="ml-1 font-semibold text-slate-800">{formatCurrency((product.stock_actuel || 0) * (product.prix_unitaire || 0))}</span>
                 </div>
               </div>
             </div>
           ))}
           {products.length === 0 && (
-            <div className="text-center py-8 text-slate-500 text-sm">Aucun produit trouvé</div>
+            <EmptyState message="Aucun produit trouvé" />
           )}
         </div>
 
@@ -625,7 +638,8 @@ export function ProductsPage() {
                     type="text"
                     value={formData.nom}
                     onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    className={`w-full px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
+                    placeholder="Nom du médicament"
+                    className={`w-full px-3 sm:px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
                       fieldErrors.nom ? 'border-red-500' : 'border-slate-300'
                     }`}
                   />
@@ -641,7 +655,8 @@ export function ProductsPage() {
                     type="text"
                     value={formData.forme}
                     onChange={(e) => setFormData({ ...formData, forme: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Ex: Comprimé, Sirop, Injectable"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -651,7 +666,8 @@ export function ProductsPage() {
                     type="text"
                     value={formData.dosage}
                     onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Ex: 500mg, 250mg/5ml"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -661,7 +677,8 @@ export function ProductsPage() {
                     type="text"
                     value={formData.unite}
                     onChange={(e) => setFormData({ ...formData, unite: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Ex: Boîte, Flacon, Plaquette"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -671,9 +688,12 @@ export function ProductsPage() {
                     type="number"
                     min="0"
                     step="1"
-                    value={formData.seuil_alerte}
+                    inputMode="numeric"
+                    placeholder="Ex: 10"
+                    value={formData.seuil_alerte || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setFormData({ ...formData, seuil_alerte: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -683,9 +703,12 @@ export function ProductsPage() {
                     type="number"
                     min="0"
                     step="1"
-                    value={formData.stock_actuel}
+                    inputMode="numeric"
+                    placeholder="Ex: 50"
+                    value={formData.stock_actuel || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setFormData({ ...formData, stock_actuel: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -695,9 +718,12 @@ export function ProductsPage() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={formData.prix_unitaire}
+                    inputMode="decimal"
+                    placeholder="Ex: 25.00"
+                    value={formData.prix_unitaire || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -707,7 +733,8 @@ export function ProductsPage() {
                     type="text"
                     value={formData.classe_therapeutique}
                     onChange={(e) => setFormData({ ...formData, classe_therapeutique: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Ex: Antirétroviral, Antibiotique"
+                    className="w-full px-3 sm:px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
@@ -881,13 +908,7 @@ export function ProductsPage() {
       )}
 
       {/* Mobile: Bouton flottant rond */}
-      <button
-        onClick={() => openModal()}
-        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 z-40 hover:scale-110"
-        aria-label="Créer un nouveau produit"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {!isReadOnly && <FAB onClick={() => openModal()} label="Créer un nouveau produit" />}
     </div>
   );
 }
