@@ -75,7 +75,7 @@ export function ExpiryPage() {
     try {
       const { error } = await supabase
         .from('peremptions')
-        .insert([formData]);
+        .insert([formData] as any);
 
       if (error) throw error;
 

@@ -10,7 +10,6 @@ import { useMovements, useAllMovements } from '../lib/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Database } from '../lib/database.types';
 
-type Movement = Database['public']['Tables']['mouvements']['Row'];
 type Product = Database['public']['Tables']['products']['Row'];
 
 export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
@@ -73,7 +72,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
   // Lot management for SORTIE
   const [availableLots, setAvailableLots] = useState<any[]>([]);
-  const [selectedLot, setSelectedLot] = useState<string>('');
+  const [, setSelectedLot] = useState<string>('');
   const [lotDetails, setLotDetails] = useState<any>(null);
   const [quantityError, setQuantityError] = useState<string>('');
   const [isLoadingLots, setIsLoadingLots] = useState(false);
@@ -263,7 +262,6 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
       }
 
       const valeur_totale = formData.quantite * (formData.prix_unitaire || 0);
-      const valeur_stock = newStock * (product.prix_unitaire || 0);
 
       // Prepare movement data
       const movementData = {
@@ -275,29 +273,20 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
         prix_unitaire: formData.prix_unitaire,
         lot_numero: formData.lot_numero || null,
         date_peremption: formData.date_peremption || null,
-        mois: getMonthFromDate(formData.date_mouvement), // Calculate from date_mouvement
+        mois: getMonthFromDate(formData.date_mouvement),
         created_by: user.id,
         valeur_totale,
         solde_apres: newStock,
       };
 
-      // @ts-ignore - New fields added to database
       const { error: movementError } = await supabase
         .from('mouvements')
-        .insert([movementData]);
+        .insert([movementData] as any);
 
       if (movementError) throw movementError;
 
-      // @ts-ignore - Supabase type inference issue
-      const { error: productError } = await supabase
-        .from('products')
-        .update({
-          stock_actuel: newStock,
-          valeur_stock,
-        })
-        .eq('id', formData.product_id);
-
-      if (productError) throw productError;
+      // stock_actuel is auto-updated by DB trigger, valeur_stock is a generated column
+      // No need to manually update the product
 
       showToast('success', `Mouvement enregistré avec succès — stock restant: ${newStock} unités.`);
 
@@ -334,44 +323,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
     if (!confirmDelete.id) return;
 
     try {
-      // First, get the movement details to update the product stock
-      // @ts-ignore - Supabase type inference issue with joined tables
-      const { data: movement, error: fetchError } = await supabase
-        .from('mouvements')
-        .select('*, product:products(*)')
-        .eq('id', confirmDelete.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-      if (!movement) throw new Error('Mouvement introuvable');
-
-      // Calculate the new stock after removing this movement
-      // @ts-ignore - Product type from join
-      const product = movement.product as any;
-      if (!product) throw new Error('Produit introuvable');
-
-      const currentStock = product.stock_actuel || 0;
-      let newStock = currentStock;
-
-      // Reverse the movement operation: ENTREE adds (so subtract), SORTIE subtracts (so add back)
-      // @ts-ignore - Movement type
-      if (movement.type_mouvement === 'ENTREE') {
-        // @ts-ignore - Movement type
-        newStock = currentStock - movement.quantite;
-      // @ts-ignore - Movement type
-      } else if (movement.type_mouvement === 'SORTIE') {
-        // @ts-ignore - Movement type
-        newStock = currentStock + movement.quantite;
-      }
-
-      // Prevent negative stock
-      if (newStock < 0) {
-        throw new Error('La suppression de ce mouvement entraînerait un stock négatif. Impossible de supprimer.');
-      }
-
-      const valeur_stock = newStock * (product.prix_unitaire || 0);
-
-      // Delete the movement
+      // Delete the movement — DB trigger will auto-update product stock_actuel
       const { error: deleteError } = await supabase
         .from('mouvements')
         .delete()
@@ -379,18 +331,7 @@ export function MovementsPage({ selectedMonth }: { selectedMonth: string }) {
 
       if (deleteError) throw deleteError;
 
-      // Update product stock
-      // @ts-ignore - Supabase type inference issue
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
-          stock_actuel: newStock,
-          valeur_stock,
-        })
-        // @ts-ignore - Movement type
-        .eq('id', movement.product_id);
-
-      if (updateError) throw updateError;
+      // stock_actuel is auto-updated by DB trigger, valeur_stock is a generated column
 
       showToast('success', 'Mouvement supprimé avec succès.');
       

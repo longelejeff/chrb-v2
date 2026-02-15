@@ -10,12 +10,6 @@ import ConfirmModal from './ConfirmModal';
 import type { Database } from '../lib/database.types';
 
 type Inventory = Database['public']['Tables']['inventaires']['Row'];
-type InventoryLine = Database['public']['Tables']['lignes_inventaire']['Row'];
-type Product = Database['public']['Tables']['products']['Row'];
-
-interface InventoryLineWithProduct extends InventoryLine {
-  product?: Product;
-}
 
 export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   const { user } = useAuth();
@@ -34,7 +28,7 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
   });
 
   // Use React Query hook for inventory lines
-  const { data: linesData, isLoading: linesLoading, refetch } = useInventoryLines({
+  const { data: linesData, refetch } = useInventoryLines({
     page,
     pageSize,
     searchTerm,
@@ -69,14 +63,14 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
       if (!inv) {
         const { data: newInv, error: createError } = await supabase
           .from('inventaires')
-          .insert([{ mois: selectedMonth, statut: 'BROUILLON' }])
+          .insert([{ mois: selectedMonth, statut: 'BROUILLON' }] as any)
           .select()
           .single();
 
         if (createError) throw createError;
-        inv = newInv;
+        inv = newInv as any;
 
-        await initializeInventoryLines(newInv.id);
+        await initializeInventoryLines((newInv as any).id);
       }
 
       setInventory(inv);
@@ -95,21 +89,21 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id, stock_actuel')
-        .eq('actif', true);
+        .eq('actif', true) as { data: { id: string; stock_actuel: number | null }[] | null; error: any };
 
       if (productsError) throw productsError;
 
-      const linesToInsert = products.map((product) => ({
+      const linesToInsert = (products || []).map((product) => ({
         inventaire_id: inventoryId,
         product_id: product.id,
         stock_theorique: product.stock_actuel || 0,
         stock_physique: 0,
-        ecart: -product.stock_actuel || 0,
+        ecart: -(product.stock_actuel || 0),
       }));
 
       const { error: insertError } = await supabase
         .from('lignes_inventaire')
-        .insert(linesToInsert);
+        .insert(linesToInsert as any);
 
       if (insertError) throw insertError;
     } catch (error) {
@@ -125,10 +119,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
     const ecart = stockPhysique - stockTheorique;
 
     try {
-      // @ts-ignore - Supabase type inference issue
-      const { error } = await supabase
-        .from('lignes_inventaire')
-        // @ts-ignore
+      const { error } = await (supabase
+        .from('lignes_inventaire') as any)
         .update({
           stock_physique: stockPhysique,
           stock_theorique: stockTheorique,
@@ -168,10 +160,8 @@ export function InventoryPage({ selectedMonth }: { selectedMonth: string }) {
 
     try {
       setSaving(true);
-      // @ts-ignore - Supabase type inference issue
-      const { error } = await supabase
-        .from('inventaires')
-        // @ts-ignore
+      const { error } = await (supabase
+        .from('inventaires') as any)
         .update({
           statut: 'VALIDE',
           validated_by: user.id,

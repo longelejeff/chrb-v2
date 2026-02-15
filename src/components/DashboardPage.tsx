@@ -3,47 +3,29 @@ import { Package, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Clock } f
 import { formatNumber, formatCurrencyCompact, formatDate } from '../lib/utils';
 import { useDashboard } from '../lib/hooks';
 
-interface DashboardStats {
-  totalProducts: number;
-  activeProducts: number;
-  totalStockValue: number;
-  entriesValueMonth: number;
-  exitsValueMonth: number;
-  entriesQtyMonth: number;
-  exitsQtyMonth: number;
-  expiringSoon: number;
-  expiringSoon7Days: number;
-  expired: number;
-  lowStockProducts: number;
-  outOfStockProducts: number;
-}
-
-interface TopProduct {
+// Types used in computed stats and display
+interface ProductRow {
   id: string;
   code: string;
   nom: string;
-  valeur_stock: number;
-  stock_actuel: number;
+  actif: boolean | null;
+  seuil_alerte: number | null;
+  stock_actuel: number | null;
+  valeur_stock: number | null;
 }
 
-interface LowStockProduct {
-  id: string;
-  code: string;
-  nom: string;
-  seuil_alerte: number;
-  stock_actuel: number;
-}
-
-interface RecentMovement {
-  id: string;
+interface MovementRow {
   type_mouvement: string;
   quantite: number;
-  date_mouvement: string;
+  valeur_totale: number | null;
+}
+
+interface LotMovementRow {
+  product_id: string;
+  type_mouvement: string;
+  quantite: number;
   lot_numero: string | null;
-  product: {
-    nom: string;
-    code: string;
-  };
+  date_peremption: string | null;
 }
 
 export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
@@ -67,34 +49,26 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       };
     }
 
-    const { products, movements, allMovementsWithLots } = data;
+    const { products: rawProducts, movements: rawMovements, allMovementsWithLots: rawLotMovements } = data;
+    const products = rawProducts as unknown as ProductRow[];
+    const movements = rawMovements as unknown as MovementRow[];
+    const allMovementsWithLots = rawLotMovements as unknown as LotMovementRow[];
 
-    // @ts-ignore - Supabase type inference
     const activeProducts = products.filter(p => p.actif);
-
-    // @ts-ignore - Supabase type inference
     const totalStockValue = activeProducts.reduce((sum, p) => sum + (p.valeur_stock || 0), 0);
 
-    // @ts-ignore - Supabase type inference
     const entries = movements.filter(m => m.type_mouvement === 'ENTREE');
-    // @ts-ignore - Supabase type inference
     const exits = movements.filter(m => m.type_mouvement === 'SORTIE');
 
-    // @ts-ignore - Supabase type inference
     const entriesValueMonth = entries.reduce((sum, m) => sum + (m.valeur_totale || 0), 0);
-    // @ts-ignore - Supabase type inference
     const exitsValueMonth = exits.reduce((sum, m) => sum + (m.valeur_totale || 0), 0);
-    // @ts-ignore - Supabase type inference
     const entriesQtyMonth = entries.reduce((sum, m) => sum + m.quantite, 0);
-    // @ts-ignore - Supabase type inference
     const exitsQtyMonth = exits.reduce((sum, m) => sum + m.quantite, 0);
 
     // Calculate lot stocks from movements (FEFO logic)
     const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
     
-    // @ts-ignore - Supabase type inference
     allMovementsWithLots.forEach(movement => {
-      // @ts-ignore - Supabase type inference
       const key = `${movement.product_id}_${movement.lot_numero}`;
       
       if (!lotStocks.has(key)) {
@@ -109,18 +83,12 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
       }
       
       const lot = lotStocks.get(key)!;
-      // @ts-ignore - Supabase type inference
       if (movement.type_mouvement === 'ENTREE') {
-        // @ts-ignore - Supabase type inference
         lot.stock += movement.quantite;
-        // Update expiry date from ENTREE movements (they have the date)
-        // @ts-ignore - Supabase type inference
         if (movement.date_peremption) {
-          // @ts-ignore - Supabase type inference
           lot.date_peremption = movement.date_peremption;
         }
       } else {
-        // @ts-ignore - Supabase type inference
         lot.stock -= movement.quantite;
       }
     });
@@ -151,7 +119,6 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     let lowStock = 0;
     let outOfStock = 0;
 
-    // @ts-ignore - Supabase type inference
     for (const product of activeProducts) {
       const stockActuel = product.stock_actuel || 0;
       
@@ -204,33 +171,25 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     // Calculate lot stocks from movements
     const lotStocks = new Map<string, { stock: number; date_peremption: string | null; product_id: string }>();
     
-    // @ts-ignore - Supabase type inference
-    data.allMovementsWithLots?.forEach(movement => {
-      // @ts-ignore - Supabase type inference
+    const rawLotMovements = data.allMovementsWithLots as unknown as LotMovementRow[];
+    rawLotMovements?.forEach(movement => {
       const key = `${movement.product_id}_${movement.lot_numero}`;
       
       if (!lotStocks.has(key)) {
         lotStocks.set(key, {
           stock: 0,
-          // @ts-ignore - Supabase type inference
           date_peremption: movement.date_peremption || null,
-          // @ts-ignore - Supabase type inference
           product_id: movement.product_id,
         });
       }
       
       const lot = lotStocks.get(key)!;
-      // @ts-ignore - Supabase type inference
       if (movement.type_mouvement === 'ENTREE') {
-        // @ts-ignore - Supabase type inference
         lot.stock += movement.quantite;
-        // @ts-ignore - Supabase type inference
         if (movement.date_peremption) {
-          // @ts-ignore - Supabase type inference
           lot.date_peremption = movement.date_peremption;
         }
       } else {
-        // @ts-ignore - Supabase type inference
         lot.stock -= movement.quantite;
       }
     });
@@ -251,8 +210,8 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
         if (category) {
           const existing = productExpiryMap.get(lot.product_id);
           if (!existing || expiryDate < existing.earliestExpiry) {
-            // @ts-ignore
-            const product = data.products.find(p => p.id === lot.product_id);
+            const allProducts = data.products as unknown as ProductRow[];
+            const product = allProducts.find(p => p.id === lot.product_id);
             if (product) {
               productExpiryMap.set(lot.product_id, {
                 product,
@@ -273,10 +232,8 @@ export function DashboardPage({ selectedMonth }: { selectedMonth: string }) {
     });
 
     // Stock alerts
-    // @ts-ignore
-    const activeProducts = data.products.filter(p => p.actif);
-    // @ts-ignore
-    activeProducts.forEach(product => {
+    const activeProds = (data.products as unknown as ProductRow[]).filter(p => p.actif);
+    activeProds.forEach(product => {
       const stockActuel = product.stock_actuel || 0;
       if (stockActuel === 0) {
         outOfStock.push(product);

@@ -153,9 +153,10 @@ export function ProductsPage() {
     const { data, error } = await supabase
       .from('products')
       .select('id')
-      .eq('code', code);
+      .eq('code', code) as { data: { id: string }[] | null; error: any };
 
     if (error) throw error;
+    if (!data) return false;
 
     if (excludeId) {
       return data.some(p => p.id !== excludeId);
@@ -202,14 +203,14 @@ export function ProductsPage() {
     }
   }
 
-  async function saveProduct(data: typeof formData, withSuffix: boolean) {
+  async function saveProduct(data: typeof formData, _withSuffix?: boolean) {
     try {
-      const valeur_stock = (data.stock_actuel || 0) * (data.prix_unitaire || 0);
-      const productData = { ...data, valeur_stock };
+      // valeur_stock is a GENERATED column (stock_actuel * prix_unitaire) — don't send it
+      const productData = { ...data };
 
       if (editingProduct) {
-        const { error } = await supabase
-          .from('products')
+        const { error } = await (supabase
+          .from('products') as any)
           .update(productData)
           .eq('id', editingProduct.id);
 
@@ -218,7 +219,7 @@ export function ProductsPage() {
       } else {
         const { error } = await supabase
           .from('products')
-          .insert([productData]);
+          .insert([productData] as any);
 
         if (error) throw error;
         showToast('success', `Produit "${data.nom}" créé avec succès.`);
@@ -239,8 +240,8 @@ export function ProductsPage() {
 
   async function toggleActive(product: Product) {
     try {
-      const { error } = await supabase
-        .from('products')
+      const { error } = await (supabase
+        .from('products') as any)
         .update({ actif: !product.actif })
         .eq('id', product.id);
 
@@ -299,7 +300,7 @@ export function ProductsPage() {
 
         const { error } = await supabase
           .from('products')
-          .upsert(productsToImport, { onConflict: 'code', ignoreDuplicates: false });
+          .upsert(productsToImport as any, { onConflict: 'code', ignoreDuplicates: false });
 
         if (error) throw error;
 
@@ -350,7 +351,7 @@ export function ProductsPage() {
               seuil_alerte: 0,
               classe_therapeutique: '',
               actif: true,
-            }]);
+            }] as any);
 
           if (error) throw error;
 

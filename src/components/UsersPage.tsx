@@ -119,9 +119,8 @@ export function UsersPage() {
 
     try {
       if (editingUser) {
-        // @ts-ignore - Supabase type inference issue
-        const { error: updateError } = await supabase
-          .from('profiles')
+        const { error: updateError } = await (supabase
+          .from('profiles') as any)
           .update({
             nom: formData.nom,
             role: formData.role,

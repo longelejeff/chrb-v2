@@ -22,7 +22,7 @@ export interface Database {
           actif: boolean | null
           stock_actuel: number | null
           prix_unitaire: number | null
-          valeur_stock: number | null
+          valeur_stock: number | null // GENERATED ALWAYS — read-only
           created_at: string | null
           updated_at: string | null
         }
@@ -38,7 +38,7 @@ export interface Database {
           actif?: boolean | null
           stock_actuel?: number | null
           prix_unitaire?: number | null
-          valeur_stock?: number | null
+          // valeur_stock is GENERATED — cannot be set on insert
           created_at?: string | null
           updated_at?: string | null
         }
@@ -54,7 +54,7 @@ export interface Database {
           actif?: boolean | null
           stock_actuel?: number | null
           prix_unitaire?: number | null
-          valeur_stock?: number | null
+          // valeur_stock is GENERATED — cannot be set on update
           created_at?: string | null
           updated_at?: string | null
         }
@@ -63,7 +63,7 @@ export interface Database {
         Row: {
           id: string
           product_id: string
-          type_mouvement: 'ENTREE' | 'SORTIE'
+          type_mouvement: 'ENTREE' | 'SORTIE' | 'OUVERTURE' | 'AJUSTEMENT' | 'MISE_AU_REBUT'
           quantite: number
           date_mouvement: string
           mois: string
@@ -79,10 +79,10 @@ export interface Database {
         Insert: {
           id?: string
           product_id: string
-          type_mouvement: 'ENTREE' | 'SORTIE'
+          type_mouvement: 'ENTREE' | 'SORTIE' | 'OUVERTURE' | 'AJUSTEMENT' | 'MISE_AU_REBUT'
           quantite: number
           date_mouvement?: string
-          mois: string
+          mois?: string
           note?: string | null
           created_by: string
           prix_unitaire?: number | null
@@ -95,7 +95,7 @@ export interface Database {
         Update: {
           id?: string
           product_id?: string
-          type_mouvement?: 'ENTREE' | 'SORTIE'
+          type_mouvement?: 'ENTREE' | 'SORTIE' | 'OUVERTURE' | 'AJUSTEMENT' | 'MISE_AU_REBUT'
           quantite?: number
           date_mouvement?: string
           mois?: string
@@ -229,6 +229,7 @@ export interface Database {
         Row: {
           id: string
           nom: string
+          email: string
           role: 'ADMIN' | 'USER'
           created_at: string | null
           updated_at: string | null
@@ -236,6 +237,7 @@ export interface Database {
         Insert: {
           id: string
           nom: string
+          email?: string
           role?: 'ADMIN' | 'USER'
           created_at?: string | null
           updated_at?: string | null
@@ -243,6 +245,7 @@ export interface Database {
         Update: {
           id?: string
           nom?: string
+          email?: string
           role?: 'ADMIN' | 'USER'
           created_at?: string | null
           updated_at?: string | null

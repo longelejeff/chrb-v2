@@ -64,14 +64,14 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id')
-        .eq('actif', true);
+        .eq('actif', true) as { data: { id: string }[] | null; error: any };
 
       if (productsError) throw productsError;
 
       let transferredCount = 0;
-      const movementsToInsert = [];
+      const movementsToInsert: any[] = [];
 
-      for (const product of products) {
+      for (const product of products || []) {
         const stock = await calculateStock(product.id, previousMonth);
         if (stock > 0) {
           const dateMouvement = `${selectedMonth}-01`;
@@ -91,7 +91,7 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
       if (movementsToInsert.length > 0) {
         const { error: movementsError } = await supabase
           .from('mouvements')
-          .insert(movementsToInsert);
+          .insert(movementsToInsert as any);
 
         if (movementsError) throw movementsError;
       }
@@ -103,7 +103,7 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
           mois_destination: selectedMonth,
           nb_produits: transferredCount,
           created_by: user.id,
-        }]);
+        }] as any);
 
       if (transferError) throw transferError;
 
@@ -125,7 +125,7 @@ export function TransferPage({ selectedMonth }: { selectedMonth: string }) {
         .from('mouvements')
         .select('type_mouvement, quantite')
         .eq('product_id', productId)
-        .lte('date_mouvement', endDate);
+        .lte('date_mouvement', endDate) as { data: { type_mouvement: string; quantite: number }[] | null; error: any };
 
       if (error) throw error;
 
