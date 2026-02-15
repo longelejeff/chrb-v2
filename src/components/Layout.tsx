@@ -77,47 +77,47 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-      <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 transition-colors duration-200">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
+    <div className="min-h-screen-d bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+      <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 transition-colors duration-200 safe-left safe-right">
+        <div className="px-2 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-1 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-shrink">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex-shrink-0"
                 aria-label={sidebarOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
                 aria-expanded={sidebarOpen}
                 aria-controls="sidebar-nav"
               >
-                {sidebarOpen ? <X className="w-6 h-6 dark:text-slate-200" /> : <Menu className="w-6 h-6 dark:text-slate-200" />}
+                {sidebarOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 dark:text-slate-200" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6 dark:text-slate-200" />}
               </button>
               
               {/* Title as pill/badge with accent */}
-              <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors max-w-[200px] sm:max-w-none">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 px-2 sm:px-3 py-1 sm:py-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors min-w-0">
                 <div className="w-1 h-3.5 rounded-full bg-blue-600 flex-shrink-0" aria-hidden="true"></div>
                 <div className="min-w-0">
-                  <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100 tracking-tight truncate">
+                  <h1 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 tracking-tight truncate">
                     CHRB
                   </h1>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 hidden sm:block truncate">Gestion de Stock</p>
+                  <p className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 hidden sm:block truncate">Gestion de Stock</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
               {/* Dark mode toggle */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 title={darkMode ? 'Mode clair' : 'Mode sombre'}
                 aria-label={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
               >
-                {darkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
+                {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />}
               </button>
 
               {/* Month selector as pill */}
               <div 
-                className="inline-flex items-center gap-1.5 sm:gap-2 bg-slate-100 dark:bg-slate-700 rounded-full px-3 py-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                className="inline-flex items-center gap-0.5 sm:gap-1.5 md:gap-2 bg-slate-100 dark:bg-slate-700 rounded-full px-1.5 sm:px-3 py-1 sm:py-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                 aria-label={formatMonth(selectedMonth)}
               >
                 <button
@@ -125,9 +125,9 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
                   className="p-0.5 sm:p-1 hover:bg-white dark:hover:bg-slate-500 rounded-full transition-colors"
                   aria-label="Mois précédent"
                 >
-                  <ChevronLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700 dark:text-slate-200" />
                 </button>
-                <span className="font-medium text-slate-700 dark:text-slate-200 text-xs sm:text-sm whitespace-nowrap max-w-[40vw] sm:max-w-none overflow-hidden text-ellipsis">
+                <span className="font-medium text-slate-700 dark:text-slate-200 text-[11px] sm:text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                   <span className="md:hidden">{formatMonthShort(selectedMonth)}</span>
                   <span className="hidden md:inline">{formatMonth(selectedMonth)}</span>
                 </span>
@@ -137,7 +137,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
                   disabled={selectedMonth >= getCurrentMonth()}
                   aria-label="Mois suivant"
                 >
-                  <ChevronRight className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700 dark:text-slate-200" />
                 </button>
               </div>
 
@@ -160,21 +160,25 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
         </div>
       </nav>
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className="flex h-sidebar overflow-hidden">
         <aside
           id="sidebar-nav"
           role="navigation"
           aria-label="Menu principal"
           className={`
-            fixed lg:sticky top-16 left-0 h-[calc(100vh-4rem)] self-stretch bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700
-            transition-all duration-300 z-20 overflow-y-auto
+            fixed lg:sticky top-14 sm:top-16 left-0 z-20
+            h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]
+            h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)]
+            bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700
+            transition-all duration-300 overflow-y-auto overflow-x-hidden
+            flex flex-col
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}
-            ${sidebarOpen ? 'w-64' : 'w-64'}
+            w-[clamp(200px,80vw,256px)]
           `}
         >
           {/* Desktop collapse toggle */}
-          <div className="hidden lg:flex items-center justify-end p-2 border-b border-slate-200 dark:border-slate-700">
+          <div className="hidden lg:flex items-center justify-end p-2 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
@@ -187,7 +191,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
             </button>
           </div>
 
-          <nav className={`p-2 ${sidebarCollapsed ? 'lg:px-1' : 'lg:p-4'} space-y-1`}>
+          <nav className={`flex-1 p-2 ${sidebarCollapsed ? 'lg:px-1' : 'lg:p-4'} space-y-1 overflow-y-auto`}>
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -201,8 +205,8 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
                   }}
                   title={sidebarCollapsed ? item.label : undefined}
                   className={`
-                    w-full flex items-center gap-3 rounded-lg transition-colors
-                    ${sidebarCollapsed ? 'lg:justify-center lg:px-0 lg:py-3 px-4 py-3' : 'px-4 py-3'}
+                    w-full flex items-center gap-2 sm:gap-3 rounded-lg transition-colors
+                    ${sidebarCollapsed ? 'lg:justify-center lg:px-0 lg:py-3 px-3 py-2.5' : 'px-3 py-2.5 sm:px-4 sm:py-3'}
                     ${isActive
                       ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-medium'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -210,7 +214,7 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
                   `}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span className={`flex-1 text-left ${sidebarCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
+                  <span className={`flex-1 text-left text-sm ${sidebarCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
                   {badge > 0 && (
                     <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full ${sidebarCollapsed ? 'lg:absolute lg:top-0 lg:right-0 lg:min-w-[16px] lg:h-4 lg:text-[10px]' : 'ml-auto'}`}>
                       {badge > 99 ? '99+' : badge}
@@ -221,10 +225,10 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
             })}
           </nav>
 
-          <div className="sm:hidden absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="sm:hidden flex-shrink-0 p-3 border-t border-slate-200 dark:border-slate-700 safe-bottom">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm"
             >
               <LogOut className="w-5 h-5" />
               Déconnexion
@@ -239,9 +243,11 @@ export function Layout({ children, currentView, onViewChange, selectedMonth, onM
           />
         )}
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+          <div className="p-2 sm:p-4 md:p-6 lg:p-8 safe-bottom">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
           </div>
         </main>
       </div>

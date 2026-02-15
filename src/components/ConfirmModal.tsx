@@ -30,26 +30,26 @@ export default function ConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h3>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
+      <div className="bg-white rounded-t-xl sm:rounded-lg shadow-xl w-full sm:max-w-md transform transition-all">
+        <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 border-b">
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate pr-2">{title}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 sm:p-6">
+        <div className="p-3 sm:p-4 md:p-6">
           <p className="text-sm sm:text-base text-gray-600">{message}</p>
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row gap-3 p-4 sm:p-6 bg-gray-50 rounded-b-lg">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 p-3 sm:p-4 md:p-6 bg-gray-50 rounded-b-xl sm:rounded-b-lg safe-bottom">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             {cancelText}
           </button>
@@ -58,7 +58,7 @@ export default function ConfirmModal({
               onConfirm();
               onClose();
             }}
-            className={`w-full sm:w-auto px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${typeColors[type]}`}
+            className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-medium text-white rounded-lg transition-colors ${typeColors[type]}`}
           >
             {confirmText}
           </button>

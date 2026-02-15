@@ -4,7 +4,7 @@ interface PaginationControlsProps {
   pageSize: number;
   totalItems: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 export function PaginationControls({
@@ -25,18 +25,22 @@ export function PaginationControls({
       {/* Desktop Pagination */}
       <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-600">Afficher:</label>
-          <select
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {pageSizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+          {onPageSizeChange && (
+            <>
+              <label className="text-sm text-slate-600">Afficher:</label>
+              <select
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {pageSizes.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <span className="text-sm text-slate-600">
             {startItem}-{endItem} sur {totalItems}
           </span>
